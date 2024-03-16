@@ -1,0 +1,7 @@
+# Number of Images
+# 16
+# Filename                     exposure
+StLouisArchMultExpEV+4.09.jpeg 17.02992
+StLouisArchMultExpEV+1.51.jpeg 2.848100
+StLouisArchMultExpEV-1.82.jpeg 0.283221
+StLouisArchMultExpEV-4.72.jpeg 0.037944

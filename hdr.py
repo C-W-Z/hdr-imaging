@@ -70,22 +70,25 @@ def construct_radiance_map(images:np.ndarray[int, 3], g:np.ndarray[float], lnt:n
     lnE = np.average(g_lnt_map, axis=0, weights=w_map)
     return lnE
 
-def load_exposures(source_dir, channel=0):
-    filenames = []
+def read_images(source_dir):
+    filepaths = []
     exposure_times = []
-    f = open(os.path.join(source_dir, 'hdr_image_list.txt'))
-    for line in f:
-        if (line[0] == '#'):
+    img_list = open(os.path.join(source_dir, 'image_list.txt'))
+    for line in img_list:
+        if line.startswith('#'):
             continue
-        (filename, exposure, *rest) = line.split()
-        filenames += [filename]
+        filename, exposure, *_ = line.split()
+        filepaths += [os.path.join(source_dir, filename)]
         exposure_times += [exposure]
-    
-    img_list = [cv2.imread(os.path.join(source_dir, f), 1) for f in filenames]
-    img_list = [img[:,:,channel] for img in img_list]
-    exposure_times = np.array(exposure_times, dtype=np.float32)
 
-    return (img_list, exposure_times * 16)
+    img_list = [cv2.imread(path, cv2.IMREAD_COLOR) for path in filepaths]
+
+    b = np.array([img[:,:,0] for img in img_list])
+    g = np.array([img[:,:,1] for img in img_list])
+    r = np.array([img[:,:,2] for img in img_list])
+    lnt = np.log(np.array(exposure_times, dtype = np.float32))
+
+    return (r, g, b, lnt)
 
 def sample_pixels(h, w, x = 20, y = 20):
     ''' 
@@ -102,7 +105,7 @@ def sample_pixels(h, w, x = 20, y = 20):
 
 def get_z(images, pixel_positions):
     ''' Images should be a list of 1-channel (R / G / B) images. '''
-    h, w = images[0].shape
+    # h, w = images[0].shape
     z = np.zeros((len(pixel_positions), len(images)), dtype = np.uint8)
     for i, (x, y) in enumerate(pixel_positions):
         for j, img in enumerate(images):
@@ -118,21 +121,18 @@ if __name__ == '__main__':
     img_dir = 'img/test1'
 
     print('Reading input images.... ', end='')
-    img_list_b, exposure_times = load_exposures(img_dir, 0)
-    img_list_g, exposure_times = load_exposures(img_dir, 1)
-    img_list_r, exposure_times = load_exposures(img_dir, 2)
+    img_list_r, img_list_g, img_list_b, lnt = read_images(img_dir)
     image_height, image_width = img_list_b[0].shape
     print('done')
 
     # Solving response curves
     print('Solving response curves .... ', end='')
     pixel_positions = sample_pixels(image_height, image_width)
-    w = np.array([z if z < 128 else 255-z for z in range(256)])
-    l = 10
+    w = np.array([z+1 if z < 128 else 256-z for z in range(256)])
+    l = 20
     Zb = get_z(img_list_b, pixel_positions)
     Zg = get_z(img_list_g, pixel_positions)
     Zr = get_z(img_list_r, pixel_positions)
-    lnt = np.array([math.log(e,2) for e in exposure_times])
     gb, _ = solve_response_function(Zb, lnt, l, w)
     gg, _ = solve_response_function(Zg, lnt, l, w)
     gr, _ = solve_response_function(Zr, lnt, l, w)
