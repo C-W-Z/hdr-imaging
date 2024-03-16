@@ -12,13 +12,13 @@ def solve_response_function(Z:np.ndarray[int, 2], lnt:np.ndarray[float], l:float
     b : [N * P + 1 + 254] * 1
 
     Parameters:
-    Z[i,j] : The pixel value of pixel location i in image j (Z.size=N*P, Z.min=0, Z.max=255)
-    lnt[j] : The log delta t or log shutter speed for image j (B.len=P)
+    Z[i,j] : The pixel value of pixel location i in image j (size=N*P, min=0, max=255)
+    lnt[j] : The log delta t or log shutter speed for image j (len=P)
     l      : lambda, the constant that determines the amount of smoothness
-    w[z]   : weighting function value for pixel value z (w.len=256)
+    w[z]   : weighting function value for pixel value z (len=256)
 
     Returns:
-    g[z]   : log exposure corresponding to pixel value z (g.len=256)
+    g[z]   : log exposure corresponding to pixel value z (len=256)
     lnE[i] : log film irradiance at pixel location i (len=N)
     """
 
@@ -47,32 +47,22 @@ def solve_response_function(Z:np.ndarray[int, 2], lnt:np.ndarray[float], l:float
     x = x.ravel()
     return (x[:256], x[256:])
 
-def construct_radiance_map(Z:np.ndarray[int, 2], g:np.ndarray[float], lnt:np.ndarray[float], w:np.ndarray[float]) -> np.ndarray[float]:
+def construct_radiance_map(images:np.ndarray[int, 3], g:np.ndarray[float], lnt:np.ndarray[float], w:np.ndarray[float]) -> np.ndarray[float]:
     """
     Construct the radiance map (size is same as images)
 
     Parameters:
-    Z[i,j] : The pixel value of pixel location i in image j (Z.size=N*P, Z.min=0, Z.max=255)
-    g[z]   : log exposure corresponding to pixel value z (g.len=256)
-    lnt[j] : The log delta t or log shutter speed for image j (B.len=P)
-    w[z]   : weighting function value for pixel value z (w.len=256)
+    images[i,j,k] : The pixel value of pixel location i,j in image k (len=P, min=0, max=255)
+    g[z]          : log exposure corresponding to pixel value z (len=256)
+    lnt[j]        : The log delta t or log shutter speed for image j (len=P)
+    w[z]          : weighting function value for pixel value z (len=256)
 
     Returns:
     lnE[z] : log film irradiance at pixel location i (len=N)
     """
 
-    N, P = Z.shape
-    assert(len(g) == 256 and len(lnt) == P and len(w) == 256)
-    lnE = np.zeros((N))
-    for i, pixel in enumerate(Z):
-        wgtSum = 0
-        wSum = 0
-        for j, zij in enumerate(pixel):
-            wgtSum += w[zij] * (g[zij] - lnt[j])
-            wSum += w[zij]
-        if wSum > 0:
-            lnE[i] = wgtSum / wSum
-        else:
-            lnE[i] = wgtSum
-
+    assert(len(images) == len(lnt) and len(g) == 256 and len(w) == 256)
+    g_lnt_map = g[images] - lnt[:, np.newaxis, np.newaxis]
+    w_map = w[images]
+    lnE = np.average(g_lnt_map, axis=0, weights=w_map)
     return lnE
