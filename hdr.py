@@ -4,7 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-def solve_response_function(Z:np.ndarray[int, 2], lnt:np.ndarray[float], l:float, w:np.ndarray[float]) -> tuple[np.ndarray[float], np.ndarray[float]]:
+def weight_function():
+    return np.array([z+1 if z < 128 else 256-z for z in range(256)], dtype=np.float32)
+
+def solve_response_function(Z:np.ndarray[np.uint8, 2], lnt:np.ndarray[np.float32], l:float, w:np.ndarray[np.float32]) -> tuple[np.ndarray[np.float32], np.ndarray[np.float32]]:
     """
     Solve for imaging system response function (camera response function, CRF)
 
@@ -25,10 +28,10 @@ def solve_response_function(Z:np.ndarray[int, 2], lnt:np.ndarray[float], l:float
     """
 
     N, P = Z.shape
-    print(f"N={N},P={P},len(lnt)={len(lnt)},len(w)={len(w)}")
+    # print(f"N={N},P={P},len(lnt)={len(lnt)},len(w)={len(w)}")
     assert(len(lnt) == P and len(w) == 256)
-    A = np.zeros((N * P + 1 + 254, 256 + N))
-    b = np.zeros((N * P + 1 + 254, 1))
+    A = np.zeros((N * P + 1 + 254, 256 + N), dtype=np.float32)
+    b = np.zeros((N * P + 1 + 254, 1), dtype=np.float32)
     k = 0
     # Include the data-fitting equations
     for i, pixel in enumerate(Z):
@@ -46,11 +49,11 @@ def solve_response_function(Z:np.ndarray[int, 2], lnt:np.ndarray[float], l:float
         A[k, i : i + 3] = l * w[i+1] * np.array([1, -2, 1])
         k += 1
     # Solve the system using SVD
-    x, _, _, _ = np.linalg.lstsq(A, b, rcond = None)
+    x, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
     x = x.ravel()
     return (x[:256], x[256:])
 
-def construct_radiance_map(images:np.ndarray[int, 3], g:np.ndarray[float], lnt:np.ndarray[float], w:np.ndarray[float]) -> np.ndarray[float]:
+def construct_radiance_map(images:np.ndarray[np.uint8, 3], g:np.ndarray[np.float32], lnt:np.ndarray[np.float32], w:np.ndarray[np.float32]) -> np.ndarray[np.float32]:
     """
     Construct the radiance map (size is same as images)
 
@@ -70,23 +73,39 @@ def construct_radiance_map(images:np.ndarray[int, 3], g:np.ndarray[float], lnt:n
     lnE = np.average(g_lnt_map, axis=0, weights=w_map)
     return lnE
 
-def read_images(source_dir):
+def read_images(source_dir:str) -> tuple[np.ndarray[np.uint8, 3], np.ndarray[np.uint8, 3], np.ndarray[np.uint8, 3], np.ndarray[np.float32]]:
+    """
+    Read the image_list.txt and read all images included in the list. Then converts images into r,g,b channels and log of exposure times
+    
+    Parameters:
+    source_dir : the path of directory containing image_list.txt and images
+
+    Returns:
+    r[j,x,y] : the pixel value of pixel location x,y in the R channel of image j
+    g[j,x,y] : the pixel value of pixel location x,y in the G channel of image j
+    b[j,x,y] : the pixel value of pixel location x,y in the B channel of image j
+    lnt[j]   : The log delta t or log shutter speed for image j
+    """
+
     filepaths = []
     exposure_times = []
-    img_list = open(os.path.join(source_dir, 'image_list.txt'))
-    for line in img_list:
-        if line.startswith('#'):
-            continue
-        filename, exposure, *_ = line.split()
-        filepaths += [os.path.join(source_dir, filename)]
-        exposure_times += [exposure]
 
-    img_list = [cv2.imread(path, cv2.IMREAD_COLOR) for path in filepaths]
+    with open(os.path.join(source_dir, 'image_list.txt'), 'r') as img_list:
+        for line in img_list:
+            line = line.lstrip()
+            if len(line) == 0 or line.startswith('#'):
+                continue
+            filename, shutter_speed, *_ = line.split()
+            filepaths.append(os.path.join(source_dir, filename))
+            exposure_times.append(shutter_speed)
 
-    b = np.array([img[:,:,0] for img in img_list])
-    g = np.array([img[:,:,1] for img in img_list])
-    r = np.array([img[:,:,2] for img in img_list])
-    lnt = np.log(np.array(exposure_times, dtype = np.float32))
+    images = [cv2.imread(path, cv2.IMREAD_COLOR) for path in filepaths]
+    assert(len(images) == len(exposure_times))
+
+    b = np.array([img[:, :, 0] for img in images], dtype=np.uint8)
+    g = np.array([img[:, :, 1] for img in images], dtype=np.uint8)
+    r = np.array([img[:, :, 2] for img in images], dtype=np.uint8)
+    lnt = np.log(np.array(exposure_times, dtype=np.float32))
 
     return (r, g, b, lnt)
 
@@ -106,9 +125,9 @@ def sample_pixels(h, w, x = 20, y = 20):
 def get_z(images, pixel_positions):
     ''' Images should be a list of 1-channel (R / G / B) images. '''
     # h, w = images[0].shape
-    z = np.zeros((len(pixel_positions), len(images)), dtype = np.uint8)
-    for i, (x, y) in enumerate(pixel_positions):
-        for j, img in enumerate(images):
+    z = np.zeros((len(pixel_positions), len(images)), dtype=np.uint8)
+    for j, img in enumerate(images):
+        for i, (x, y) in enumerate(pixel_positions):
             z[i, j] = img[x, y]
     return z
 
@@ -122,13 +141,13 @@ if __name__ == '__main__':
 
     print('Reading input images.... ', end='')
     img_list_r, img_list_g, img_list_b, lnt = read_images(img_dir)
-    image_height, image_width = img_list_b[0].shape
+    height, width = img_list_b[0].shape
     print('done')
 
     # Solving response curves
     print('Solving response curves .... ', end='')
-    pixel_positions = sample_pixels(image_height, image_width)
-    w = np.array([z+1 if z < 128 else 256-z for z in range(256)])
+    pixel_positions = sample_pixels(height, width)
+    w = weight_function()
     l = 20
     Zb = get_z(img_list_b, pixel_positions)
     Zg = get_z(img_list_g, pixel_positions)
@@ -150,7 +169,7 @@ if __name__ == '__main__':
     print('done')
 
     print('Constructing HDR image: ')
-    hdr = np.zeros((len(img_list_b[0]), len(img_list_b[0][0]), 3), 'float32')
+    hdr = np.zeros((height, width, 3), 'float32')
     vfunc = np.vectorize(lambda x:math.exp(x))
     E = construct_radiance_map(img_list_b, gb, lnt, w)
     hdr[..., 0] = vfunc(E)
