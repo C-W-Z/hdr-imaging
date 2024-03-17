@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+import OpenEXR
 
 def weight_function():
     return np.array([z+1 if z < 128 else 256-z for z in range(256)], dtype=np.float32)
@@ -159,7 +160,15 @@ def images_to_z(images:np.ndarray[np.uint8, 3], sample_pixel_locations:list[tupl
 def hdr2ldr(hdr, filename):
     tonemap = cv2.createTonemapDrago(4, 1.5, 1.5)
     ldr = tonemap.process(hdr)
-    cv2.imwrite('{}.png'.format(filename), ldr * 255)
+    cv2.imwrite(f"{filename}.png", ldr * 255)
+
+def save_hdr_image(hdr_image:np.ndarray[np.float32, 3], filename:str):
+    H, W, _ = hdr_image.shape
+    exr = OpenEXR.OutputFile(f"{filename}.hdr", OpenEXR.Header(W, H))
+    # Convert hdr image array into byte list
+    hdr_bytes = hdr_image.astype(np.float32).tobytes()
+    exr.writePixels({'R': hdr_bytes[2::3], 'G': hdr_bytes[1::3], 'B': hdr_bytes[::3]})
+    exr.close()
 
 if __name__ == '__main__':
     img_dir = 'img/test1'
@@ -185,6 +194,7 @@ if __name__ == '__main__':
         Z = images_to_z(channel, pixel_positions)
         g, _ = solve_response_function(Z, lnt, l, w)
         plt.plot(g, range(256), color[i])
+        # Construct radiance map
         lnE = construct_radiance_map(channel, g, lnt, w)
         hdr[..., i] = exponential(lnE)
 
@@ -200,3 +210,5 @@ if __name__ == '__main__':
     plt.savefig('radiance-map.png')
 
     hdr2ldr(hdr, 'ldr')
+
+    save_hdr_image(hdr, 'hdr')
