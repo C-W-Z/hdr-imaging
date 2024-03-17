@@ -28,7 +28,6 @@ def solve_response_function(Z:np.ndarray[np.uint8, 2], lnt:np.ndarray[np.float32
     """
 
     N, P = Z.shape
-    # print(f"N={N},P={P},len(lnt)={len(lnt)},len(w)={len(w)}")
     assert(len(lnt) == P and len(w) == 256)
     A = np.zeros((N * P + 1 + 254, 256 + N), dtype=np.float32)
     b = np.zeros((N * P + 1 + 254, 1), dtype=np.float32)
@@ -109,18 +108,31 @@ def read_images(source_dir:str) -> tuple[np.ndarray[np.uint8, 3], np.ndarray[np.
 
     return (r, g, b, lnt)
 
-def sample_pixels(h, w, x = 20, y = 20):
-    ''' 
-        Sample pixel positions in a h * w image. 
+def pick_sample_pixels(H, W, N=400, padding=20):
+    """
+    Pick at least 256 pixels in H * W pixels
 
-        Returns a list of tuples representing pixel positions.
-    '''
-    pos = []
-    h_step, w_step = h // (x + 1), w // (y + 1)
-    for i in range(1, x + 1):
-        for j in range(1, y + 1):
-            pos.append((i * h_step, j * w_step))
-    return pos
+    Parameters:
+    H : height of image
+    W : width of image
+    N : number of pixels to pick, N >= 256 > (Zmax - Zmin) / (P - 1)
+    padding : Areas near the edges of the image where pixels will not be picked
+
+    Returns:
+    pixels[i] : the ith of N sample pixel positions
+    """
+
+    H -= 2 * padding
+    W -= 2 * padding
+    assert(N >= 256 and H * W >= N)
+    step = H * W // N
+    pixels = []
+    for i in range(N):
+        row = padding + (i * step) // W
+        col = padding + (i * step) % W
+        assert(row >= 0 and row < H and (col >= 0 and col < W))
+        pixels.append((row, col))
+    return pixels
 
 def get_z(images, pixel_positions):
     ''' Images should be a list of 1-channel (R / G / B) images. '''
@@ -139,14 +151,11 @@ def hdr2ldr(hdr, filename):
 if __name__ == '__main__':
     img_dir = 'img/test1'
 
-    print('Reading input images.... ', end='')
     img_list_r, img_list_g, img_list_b, lnt = read_images(img_dir)
     height, width = img_list_b[0].shape
-    print('done')
 
     # Solving response curves
-    print('Solving response curves .... ', end='')
-    pixel_positions = sample_pixels(height, width)
+    pixel_positions = pick_sample_pixels(height, width)
     w = weight_function()
     l = 20
     Zb = get_z(img_list_b, pixel_positions)
@@ -155,7 +164,6 @@ if __name__ == '__main__':
     gb, _ = solve_response_function(Zb, lnt, l, w)
     gg, _ = solve_response_function(Zg, lnt, l, w)
     gr, _ = solve_response_function(Zr, lnt, l, w)
-    print('done')
 
     # Show response curve
     print('Saving response curves plot .... ', end='')
@@ -169,7 +177,7 @@ if __name__ == '__main__':
     print('done')
 
     print('Constructing HDR image: ')
-    hdr = np.zeros((height, width, 3), 'float32')
+    hdr = np.zeros((height, width, 3), dtype=np.float32)
     vfunc = np.vectorize(lambda x:math.exp(x))
     E = construct_radiance_map(img_list_b, gb, lnt, w)
     hdr[..., 0] = vfunc(E)
