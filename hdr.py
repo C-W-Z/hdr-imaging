@@ -72,7 +72,7 @@ def construct_radiance_map(images:np.ndarray[np.uint8, 3], g:np.ndarray[np.float
     lnE = np.average(g_lnt_map, axis=0, weights=w_map)
     return lnE
 
-def read_images(source_dir:str) -> tuple[np.ndarray[np.uint8, 3], np.ndarray[np.uint8, 3], np.ndarray[np.uint8, 3], np.ndarray[np.float32]]:
+def read_images(source_dir:str) -> tuple[np.ndarray[np.uint8, 4], np.ndarray[np.float32]]:
     """
     Read the image_list.txt and read all images included in the list. Then converts images into r,g,b channels and log of exposure times
     
@@ -80,9 +80,7 @@ def read_images(source_dir:str) -> tuple[np.ndarray[np.uint8, 3], np.ndarray[np.
     source_dir : the path of directory containing image_list.txt and images
 
     Returns:
-    r[j,x,y] : the pixel value of pixel location x,y in the R channel of image j
-    g[j,x,y] : the pixel value of pixel location x,y in the G channel of image j
-    b[j,x,y] : the pixel value of pixel location x,y in the B channel of image j
+    channels[i,j,x,y] : the pixel value of pixel location (x, y) in the ith channel of image j
     lnt[j]   : The log delta t or log shutter speed for image j
     """
 
@@ -101,14 +99,16 @@ def read_images(source_dir:str) -> tuple[np.ndarray[np.uint8, 3], np.ndarray[np.
     images = [cv2.imread(path, cv2.IMREAD_COLOR) for path in filepaths]
     assert(len(images) == len(exposure_times))
 
-    b = np.array([img[:, :, 0] for img in images], dtype=np.uint8)
-    g = np.array([img[:, :, 1] for img in images], dtype=np.uint8)
-    r = np.array([img[:, :, 2] for img in images], dtype=np.uint8)
+    channels = [None] * 3
+    # channel 0,1,2 = B,G,R
+    for i in range(3):
+        channels[i] = np.array([img[:, :, i] for img in images], dtype=np.uint8)
+
     lnt = np.log(np.array(exposure_times, dtype=np.float32))
 
-    return (r, g, b, lnt)
+    return (channels, lnt)
 
-def pick_sample_pixels(H, W, N=400, padding=20):
+def pick_sample_pixels(H:int, W:int, N:int=400, padding:int=20) -> list[tuple[int, int]]:
     """
     Pick at least 256 pixels in H * W pixels
 
@@ -128,73 +128,75 @@ def pick_sample_pixels(H, W, N=400, padding=20):
     step = H * W // N
     pixels = []
     for i in range(N):
-        row = padding + (i * step) // W
-        col = padding + (i * step) % W
-        assert(row >= 0 and row < H and (col >= 0 and col < W))
-        pixels.append((row, col))
+        row = (i * step) // W
+        col = (i * step) % W
+        assert(row >= 0 and row < H and col >= 0 and col < W)
+        pixels.append((padding + row, padding + col))
     return pixels
 
-def get_z(images, pixel_positions):
-    ''' Images should be a list of 1-channel (R / G / B) images. '''
-    # h, w = images[0].shape
-    z = np.zeros((len(pixel_positions), len(images)), dtype=np.uint8)
+def images_to_z(images:np.ndarray[np.uint8, 3], sample_pixel_locations:list[tuple[int, int]]) -> np.ndarray[np.uint8, 2]:
+    """
+    Generate Z from image list and sample pixel locations
+
+    Parameters:
+    images[j] : the jth images in list of 2D images
+    sample_pixel_pos[i] : (x, y) position of the ith pixel in sample pixels
+
+    Returns:
+    Z[i,j] : The pixel value of pixel location i in image j (size=N*P, min=0, max=255)
+    """
+
+    P = len(images)
+    N = len(sample_pixel_locations)
+    Z = np.zeros((N, P), dtype=np.uint8)
+
     for j, img in enumerate(images):
-        for i, (x, y) in enumerate(pixel_positions):
-            z[i, j] = img[x, y]
-    return z
+        for i, (x, y) in enumerate(sample_pixel_locations):
+            Z[i, j] = img[x, y]
+
+    return Z
 
 def hdr2ldr(hdr, filename):
-    tonemap = cv2.createTonemapDrago(5)
+    tonemap = cv2.createTonemapDrago(4, 1.5, 1.5)
     ldr = tonemap.process(hdr)
     cv2.imwrite('{}.png'.format(filename), ldr * 255)
 
 if __name__ == '__main__':
     img_dir = 'img/test1'
 
-    img_list_r, img_list_g, img_list_b, lnt = read_images(img_dir)
-    height, width = img_list_b[0].shape
+    channels, lnt = read_images(img_dir)
 
-    # Solving response curves
+    # Pick sample pixels
+    height, width = channels[0][0].shape
     pixel_positions = pick_sample_pixels(height, width)
+
     w = weight_function()
-    l = 20
-    Zb = get_z(img_list_b, pixel_positions)
-    Zg = get_z(img_list_g, pixel_positions)
-    Zr = get_z(img_list_r, pixel_positions)
-    gb, _ = solve_response_function(Zb, lnt, l, w)
-    gg, _ = solve_response_function(Zg, lnt, l, w)
-    gr, _ = solve_response_function(Zr, lnt, l, w)
+    l = 10
+
+    plt.figure(figsize=(10, 10))
+    color = ['bx','gx','rx']
+
+    hdr = np.zeros((height, width, 3), dtype=np.float32)
+    exponential = np.vectorize(lambda x:math.exp(x))
+
+    # channel 0,1,2 = B,G,R
+    for i, channel in enumerate(channels):
+        # Solve response curves
+        Z = images_to_z(channel, pixel_positions)
+        g, _ = solve_response_function(Z, lnt, l, w)
+        plt.plot(g, range(256), color[i])
+        lnE = construct_radiance_map(channel, g, lnt, w)
+        hdr[..., i] = exponential(lnE)
 
     # Show response curve
-    print('Saving response curves plot .... ', end='')
-    plt.figure(figsize=(10, 10))
-    plt.plot(gr, range(256), 'rx')
-    plt.plot(gg, range(256), 'gx')
-    plt.plot(gb, range(256), 'bx')
     plt.ylabel('pixel value Z')
     plt.xlabel('log exposure X')
     plt.savefig('response-curve.png')
-    print('done')
-
-    print('Constructing HDR image: ')
-    hdr = np.zeros((height, width, 3), dtype=np.float32)
-    vfunc = np.vectorize(lambda x:math.exp(x))
-    E = construct_radiance_map(img_list_b, gb, lnt, w)
-    hdr[..., 0] = vfunc(E)
-    E = construct_radiance_map(img_list_g, gg, lnt, w)
-    hdr[..., 1] = vfunc(E)
-    E = construct_radiance_map(img_list_r, gr, lnt, w)
-    hdr[..., 2] = vfunc(E)
-    print('done')
 
     # Display Radiance map with pseudo-color image (log value)
-    print('Saving pseudo-color radiance map .... ', end='')
     plt.figure(figsize=(12,8))
-    plt.imshow(np.log2(cv2.cvtColor(hdr, cv2.COLOR_BGR2GRAY)), cmap='jet')
+    plt.imshow(np.log(cv2.cvtColor(hdr, cv2.COLOR_BGR2GRAY)), cmap='jet')
     plt.colorbar()
     plt.savefig('radiance-map.png')
-    print('done')
 
-    print('Saving LDR image .... ', end='')
     hdr2ldr(hdr, 'ldr')
-    print('done')
