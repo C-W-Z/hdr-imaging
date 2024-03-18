@@ -152,16 +152,13 @@ def images_to_z(images:np.ndarray[np.uint8, 3], sample_pixel_locations:list[tupl
     N = len(sample_pixel_locations)
     Z = np.zeros((N, P), dtype=np.uint8)
 
+    x_coords, y_coords = zip(*sample_pixel_locations)
+
     for j, img in enumerate(images):
-        for i, (x, y) in enumerate(sample_pixel_locations):
-            Z[i, j] = img[x, y]
+        pixel_values = img[x_coords, y_coords]
+        Z[:, j] = pixel_values
 
     return Z
-
-def hdr2ldr(hdr, filename):
-    tonemap = cv2.createTonemapDrago(4, 1.5, 1.5)
-    ldr = tonemap.process(hdr)
-    cv2.imwrite(f"{filename}.png", ldr * 255)
 
 def read_hdr_image(filename:str) -> np.ndarray[np.float32, 3]:
     exr = OpenEXR.InputFile(filename)
@@ -169,15 +166,13 @@ def read_hdr_image(filename:str) -> np.ndarray[np.float32, 3]:
     dw = header['dataWindow']
     W = dw.max.x - dw.min.x + 1
     H = dw.max.y - dw.min.y + 1
-
     channels = ['R', 'G', 'B']
-    pixels = dict([(c, exr.channel(c, Imath.PixelType(Imath.PixelType.FLOAT))) for c in channels])
-
-    hdr_image = np.zeros((H, W, len(channels)), dtype=np.float32)
+    float_channel = exr.channel(c, Imath.PixelType(Imath.PixelType.FLOAT))
+    pixels = dict([(c, float_channel) for c in channels])
     # Convert to numpy array with order BGR
+    hdr_image = np.zeros((H, W, len(channels)), dtype=np.float32)
     for i, c in enumerate(channels):
         hdr_image[:, :, 2-i] = np.frombuffer(pixels[c], dtype=np.float32).reshape(H, W)
-
     return hdr_image
 
 def save_hdr_image(hdr_image:np.ndarray[np.float32, 3], filename:str):
@@ -216,10 +211,10 @@ if __name__ == '__main__':
         # Solve response curves
         Z = images_to_z(channel, pixel_positions)
         g, _ = solve_response_function(Z, lnt, l, w)
-        plt.plot(g, range(256), color[i])
         # Construct radiance map
         lnE = construct_radiance_map(channel, g, lnt, w)
         hdr[..., i] = exponential(lnE)
+        plt.plot(g, range(256), color[i])
 
     # Show response curve
     plt.ylabel('pixel value Z')
@@ -231,7 +226,5 @@ if __name__ == '__main__':
     plt.imshow(np.log(cv2.cvtColor(hdr, cv2.COLOR_BGR2GRAY)), cmap='jet')
     plt.colorbar()
     plt.savefig('radiance-map.png')
-
-    hdr2ldr(hdr, 'ldr')
 
     save_hdr_image(hdr, 'hdr')
