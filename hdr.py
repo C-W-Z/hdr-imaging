@@ -166,13 +166,13 @@ def hdr2ldr(hdr, filename):
 def save_hdr_image(hdr_image:np.ndarray[np.float32, 3], filename:str):
     H, W, _ = hdr_image.shape
     header = OpenEXR.Header(W, H)
-    half_chan = Imath.Channel(Imath.PixelType(Imath.PixelType.HALF))
-    header['channels'] = dict([(c, half_chan) for c in "RGB"])
+    float_channel = Imath.Channel(Imath.PixelType(Imath.PixelType.FLOAT))
+    header['channels'] = dict([(c, float_channel) for c in 'RGB'])
     exr = OpenEXR.OutputFile(f"{filename}.hdr", header)
     # Convert hdr image array into bytes
-    R = (hdr_image[:,:,2]).astype(np.float16).tobytes()
-    G = (hdr_image[:,:,1]).astype(np.float16).tobytes()
-    B = (hdr_image[:,:,0]).astype(np.float16).tobytes()
+    R = (hdr_image[:,:,2]).astype(np.float32).tobytes()
+    G = (hdr_image[:,:,1]).astype(np.float32).tobytes()
+    B = (hdr_image[:,:,0]).astype(np.float32).tobytes()
     exr.writePixels({'R': R, 'G': G, 'B': B})
     exr.close()
 
