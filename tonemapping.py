@@ -10,4 +10,5 @@ def tonemappingDrago(hdr:np.ndarray[np.float32, 3], filename:str):
 if __name__ == '__main__':
     filename = 'hdr.hdr'
     hdr_image = hdr.read_hdr_image(filename)
-    tonemappingDrago(hdr, 'ldr')
+    tonemappingDrago(hdr_image, 'ldr')
+    # hdr.save_hdr_image(hdr_image, 'hdr2')

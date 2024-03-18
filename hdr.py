@@ -167,8 +167,7 @@ def read_hdr_image(filename:str) -> np.ndarray[np.float32, 3]:
     W = dw.max.x - dw.min.x + 1
     H = dw.max.y - dw.min.y + 1
     channels = ['R', 'G', 'B']
-    float_channel = exr.channel(c, Imath.PixelType(Imath.PixelType.FLOAT))
-    pixels = dict([(c, float_channel) for c in channels])
+    pixels = dict([(c, exr.channel(c, Imath.PixelType(Imath.PixelType.FLOAT))) for c in channels])
     # Convert to numpy array with order BGR
     hdr_image = np.zeros((H, W, len(channels)), dtype=np.float32)
     for i, c in enumerate(channels):
