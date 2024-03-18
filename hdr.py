@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import OpenEXR
+import Imath
 
 def weight_function():
     return np.array([z+1 if z < 128 else 256-z for z in range(256)], dtype=np.float32)
@@ -164,10 +165,15 @@ def hdr2ldr(hdr, filename):
 
 def save_hdr_image(hdr_image:np.ndarray[np.float32, 3], filename:str):
     H, W, _ = hdr_image.shape
-    exr = OpenEXR.OutputFile(f"{filename}.hdr", OpenEXR.Header(W, H))
-    # Convert hdr image array into byte list
-    hdr_bytes = hdr_image.astype(np.float32).tobytes()
-    exr.writePixels({'R': hdr_bytes[2::3], 'G': hdr_bytes[1::3], 'B': hdr_bytes[::3]})
+    header = OpenEXR.Header(W, H)
+    half_chan = Imath.Channel(Imath.PixelType(Imath.PixelType.HALF))
+    header['channels'] = dict([(c, half_chan) for c in "RGB"])
+    exr = OpenEXR.OutputFile(f"{filename}.hdr", header)
+    # Convert hdr image array into bytes
+    R = (hdr_image[:,:,2]).astype(np.float16).tobytes()
+    G = (hdr_image[:,:,1]).astype(np.float16).tobytes()
+    B = (hdr_image[:,:,0]).astype(np.float16).tobytes()
+    exr.writePixels({'R': R, 'G': G, 'B': B})
     exr.close()
 
 if __name__ == '__main__':
