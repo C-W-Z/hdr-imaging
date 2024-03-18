@@ -163,6 +163,23 @@ def hdr2ldr(hdr, filename):
     ldr = tonemap.process(hdr)
     cv2.imwrite(f"{filename}.png", ldr * 255)
 
+def read_hdr_image(filename:str) -> np.ndarray[np.float32, 3]:
+    exr = OpenEXR.InputFile(filename)
+    header = exr.header()
+    dw = header['dataWindow']
+    W = dw.max.x - dw.min.x + 1
+    H = dw.max.y - dw.min.y + 1
+
+    channels = ['R', 'G', 'B']
+    pixels = dict([(c, exr.channel(c, Imath.PixelType(Imath.PixelType.FLOAT))) for c in channels])
+
+    hdr_image = np.zeros((H, W, len(channels)), dtype=np.float32)
+    # Convert to numpy array with order BGR
+    for i, c in enumerate(channels):
+        hdr_image[:, :, 2-i] = np.frombuffer(pixels[c], dtype=np.float32).reshape(H, W)
+
+    return hdr_image
+
 def save_hdr_image(hdr_image:np.ndarray[np.float32, 3], filename:str):
     H, W, _ = hdr_image.shape
     header = OpenEXR.Header(W, H)
