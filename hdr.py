@@ -9,6 +9,56 @@ import Imath
 def weight_function():
     return np.array([z+1 if z < 128 else 256-z for z in range(256)], dtype=np.float32)
 
+def pick_sample_pixels(H:int, W:int, N:int=400, padding:int=20) -> list[tuple[int, int]]:
+    """
+    Pick at least 256 pixels in H * W pixels
+
+    Parameters:
+    H : height of image
+    W : width of image
+    N : number of pixels to pick, N >= 256 > (Zmax - Zmin) / (P - 1)
+    padding : Areas near the edges of the image where pixels will not be picked
+
+    Returns:
+    pixels[i] : the ith of N sample pixel positions
+    """
+
+    H -= 2 * padding
+    W -= 2 * padding
+    assert(N >= 256 and H * W >= N)
+    step = H * W // N
+    pixels = []
+    for i in range(N):
+        row = (i * step) // W
+        col = (i * step) % W
+        assert(row >= 0 and row < H and col >= 0 and col < W)
+        pixels.append((padding + row, padding + col))
+    return pixels
+
+def images_to_z(images:np.ndarray[np.uint8, 3], sample_pixel_locations:list[tuple[int, int]]) -> np.ndarray[np.uint8, 2]:
+    """
+    Generate Z from image list and sample pixel locations
+
+    Parameters:
+    images[j] : the jth images in list of 2D images
+    sample_pixel_pos[i] : (x, y) position of the ith pixel in sample pixels
+
+    Returns:
+    Z[i,j] : The pixel value of pixel location i in image j (size=N*P, min=0, max=255)
+    """
+
+    P = len(images)
+    N = len(sample_pixel_locations)
+    Z = np.zeros((N, P), dtype=np.uint8)
+
+    x_coords, y_coords = zip(*sample_pixel_locations)
+
+    for j, img in enumerate(images):
+        pixel_values = img[x_coords, y_coords]
+        Z[:, j] = pixel_values
+
+    return Z
+
 def solve_response_function(Z:np.ndarray[np.uint8, 2], lnt:np.ndarray[np.float32], l:float, w:np.ndarray[np.float32]) -> tuple[np.ndarray[np.float32], np.ndarray[np.float32]]:
     """
     Solve for imaging system response function (camera response function, CRF)
@@ -74,12 +124,12 @@ def construct_radiance_map(images:np.ndarray[np.uint8, 3], g:np.ndarray[np.float
     lnE = np.average(g_lnt_map, axis=0, weights=w_map)
     return lnE
 
-def read_images(source_dir:str) -> tuple[np.ndarray[np.uint8, 4], np.ndarray[np.float32]]:
+def read_ldr_images(source_dir:str) -> tuple[np.ndarray[np.uint8, 4], np.ndarray[np.float32]]:
     """
     Read the image_list.txt and read all images included in the list. Then converts images into r,g,b channels and log of exposure times
     
     Parameters:
-    source_dir : the path of directory containing image_list.txt and images
+    source_dir : the path of directory containing image_list.txt and LDR images
 
     Returns:
     channels[i,j,x,y] : the pixel value of pixel location (x, y) in the ith channel of image j
@@ -110,58 +160,17 @@ def read_images(source_dir:str) -> tuple[np.ndarray[np.uint8, 4], np.ndarray[np.
 
     return (channels, lnt)
 
-def pick_sample_pixels(H:int, W:int, N:int=400, padding:int=20) -> list[tuple[int, int]]:
+def read_hdr_image(filepath:str) -> np.ndarray[np.float32, 3]:
     """
-    Pick at least 256 pixels in H * W pixels
+    Read the .hdr file and convert it into numpy array with channel order BGR
 
     Parameters:
-    H : height of image
-    W : width of image
-    N : number of pixels to pick, N >= 256 > (Zmax - Zmin) / (P - 1)
-    padding : Areas near the edges of the image where pixels will not be picked
+    filepath : the path of the .hdr file
 
     Returns:
-    pixels[i] : the ith of N sample pixel positions
+    hdr_image[x,y,i] : the HDR value (float32) of pixel location (x, y) in the ith channel
     """
-
-    H -= 2 * padding
-    W -= 2 * padding
-    assert(N >= 256 and H * W >= N)
-    step = H * W // N
-    pixels = []
-    for i in range(N):
-        row = (i * step) // W
-        col = (i * step) % W
-        assert(row >= 0 and row < H and col >= 0 and col < W)
-        pixels.append((padding + row, padding + col))
-    return pixels
-
-def images_to_z(images:np.ndarray[np.uint8, 3], sample_pixel_locations:list[tuple[int, int]]) -> np.ndarray[np.uint8, 2]:
-    """
-    Generate Z from image list and sample pixel locations
-
-    Parameters:
-    images[j] : the jth images in list of 2D images
-    sample_pixel_pos[i] : (x, y) position of the ith pixel in sample pixels
-
-    Returns:
-    Z[i,j] : The pixel value of pixel location i in image j (size=N*P, min=0, max=255)
-    """
-
-    P = len(images)
-    N = len(sample_pixel_locations)
-    Z = np.zeros((N, P), dtype=np.uint8)
-
-    x_coords, y_coords = zip(*sample_pixel_locations)
-
-    for j, img in enumerate(images):
-        pixel_values = img[x_coords, y_coords]
-        Z[:, j] = pixel_values
-
-    return Z
-
-def read_hdr_image(filename:str) -> np.ndarray[np.float32, 3]:
-    exr = OpenEXR.InputFile(filename)
+    exr = OpenEXR.InputFile(filepath)
     header = exr.header()
     dw = header['dataWindow']
     W = dw.max.x - dw.min.x + 1
@@ -174,7 +183,13 @@ def read_hdr_image(filename:str) -> np.ndarray[np.float32, 3]:
         hdr_image[:, :, 2-i] = np.frombuffer(pixels[c], dtype=np.float32).reshape(H, W)
     return hdr_image
 
-def save_hdr_image(hdr_image:np.ndarray[np.float32, 3], filename:str):
+def save_hdr_image(hdr_image:np.ndarray[np.float32, 3], filename:str) -> None:
+    """
+    Write the numpy array with channel order BGR into .hdr file 
+
+    Parameters:
+    filename : the name of the .hdr file to save
+    """
     H, W, _ = hdr_image.shape
     header = OpenEXR.Header(W, H)
     float_channel = Imath.Channel(Imath.PixelType(Imath.PixelType.FLOAT))
@@ -187,22 +202,27 @@ def save_hdr_image(hdr_image:np.ndarray[np.float32, 3], filename:str):
     exr.writePixels({'R': R, 'G': G, 'B': B})
     exr.close()
 
-if __name__ == '__main__':
-    img_dir = 'img/test1'
+def hdr_reconstruction(img_dir:str) -> np.ndarray[np.float32, 3]:
+    """
+    Read the image_list.txt and read all images included in the list. Then reconstruct those LDR images into a HDR image.
 
-    channels, lnt = read_images(img_dir)
+    Parameters:
+    img_dir : the path of directory containing image_list.txt and LDR images
 
-    # Pick sample pixels
+    Returns:
+    hdr_image[x,y,i] : the HDR value (float32) of pixel location (x, y) in the ith channel
+    """
+    channels, lnt = read_ldr_images(img_dir)
+
     height, width = channels[0][0].shape
     pixel_positions = pick_sample_pixels(height, width)
-
     w = weight_function()
     l = 10
 
     plt.figure(figsize=(10, 10))
     color = ['bx','gx','rx']
 
-    hdr = np.zeros((height, width, 3), dtype=np.float32)
+    hdr_image = np.zeros((height, width, 3), dtype=np.float32)
     exponential = np.vectorize(lambda x:math.exp(x))
 
     # channel 0,1,2 = B,G,R
@@ -212,7 +232,7 @@ if __name__ == '__main__':
         g, _ = solve_response_function(Z, lnt, l, w)
         # Construct radiance map
         lnE = construct_radiance_map(channel, g, lnt, w)
-        hdr[..., i] = exponential(lnE)
+        hdr_image[..., i] = exponential(lnE)
         plt.plot(g, range(256), color[i])
 
     # Show response curve
@@ -222,8 +242,14 @@ if __name__ == '__main__':
 
     # Display Radiance map with pseudo-color image (log value)
     plt.figure(figsize=(12,8))
-    plt.imshow(np.log(cv2.cvtColor(hdr, cv2.COLOR_BGR2GRAY)), cmap='jet')
+    plt.imshow(np.log(cv2.cvtColor(hdr_image, cv2.COLOR_BGR2GRAY)), cmap='jet')
     plt.colorbar()
     plt.savefig('radiance-map.png')
 
-    save_hdr_image(hdr, 'hdr')
+    save_hdr_image(hdr_image, 'hdr')
+
+    return hdr_image
+
+if __name__ == '__main__':
+    img_dir = 'img/test1'
+    hdr_reconstruction(img_dir)
