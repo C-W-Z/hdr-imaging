@@ -127,7 +127,7 @@ def construct_radiance_map(images:np.ndarray[np.uint8, 3], g:np.ndarray[np.float
 def read_ldr_images(source_dir:str) -> tuple[np.ndarray[np.uint8, 4], np.ndarray[np.float32]]:
     """
     Read the image_list.txt and read all images included in the list. Then converts images into r,g,b channels and log of exposure times
-    
+
     Parameters:
     source_dir : the path of directory containing image_list.txt and LDR images
 
@@ -151,6 +151,10 @@ def read_ldr_images(source_dir:str) -> tuple[np.ndarray[np.uint8, 4], np.ndarray
     images = [cv2.imread(path, cv2.IMREAD_COLOR) for path in filepaths]
     assert(len(images) == len(exposure_times))
 
+    # Align input images based on Median Threshold Bitwise method 
+    alignMTB = cv2.createAlignMTB()
+    alignMTB.process(images, images)
+
     channels = [None] * 3
     # channel 0,1,2 = B,G,R
     for i in range(3):
@@ -170,6 +174,7 @@ def read_hdr_image(filepath:str) -> np.ndarray[np.float32, 3]:
     Returns:
     hdr_image[x,y,i] : the HDR value (float32) of pixel location (x, y) in the ith channel
     """
+
     exr = OpenEXR.InputFile(filepath)
     header = exr.header()
     dw = header['dataWindow']
@@ -190,6 +195,7 @@ def save_hdr_image(hdr_image:np.ndarray[np.float32, 3], filename:str) -> None:
     Parameters:
     filename : the name of the .hdr file to save
     """
+
     H, W, _ = hdr_image.shape
     header = OpenEXR.Header(W, H)
     float_channel = Imath.Channel(Imath.PixelType(Imath.PixelType.FLOAT))
@@ -212,6 +218,7 @@ def hdr_reconstruction(img_dir:str) -> np.ndarray[np.float32, 3]:
     Returns:
     hdr_image[x,y,i] : the HDR value (float32) of pixel location (x, y) in the ith channel
     """
+
     channels, lnt = read_ldr_images(img_dir)
 
     height, width = channels[0][0].shape
