@@ -19,9 +19,9 @@ def median_threshold(images:list[cv2.Mat | np.ndarray[np.uint8, 3]], save=False)
     # const = [0, 0, 0, 0, 0, 0, 0, 0, 5, 10, 10, 10, 10, 10, 0, 0]
     for i, img in enumerate(images):
         gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        thres = np.mean(img)
+        # thres = np.mean(img)
         # thres = np.median(img)
-        # thres = (np.median(img) + np.mean(img)) / 2
+        thres = (np.median(img) + np.mean(img)) / 2
         # print(np.median(img), np.mean(img), thres)
         # thres += const[i]
         _, binary_image = cv2.threshold(gray_img, thres, 255, cv2.THRESH_BINARY)

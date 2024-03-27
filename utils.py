@@ -13,8 +13,10 @@ def read_ldr_images(source_dir:str) -> tuple[list[cv2.Mat | np.ndarray[np.uint8,
     source_dir : the path of directory containing image_list.txt and LDR images
 
     Returns:
-    channels[i,j,x,y] : the pixel value of pixel location (x, y) in the ith channel of image j
-    lnt[j]   : The log delta t or log shutter speed for image j
+    images[j] : the jth image
+    lnt[j]    : The log delta t or log shutter speed for image j
+    alignType : the alignment method to use
+    std_ing_idx : the standard image's index in the list of images (for alignment)
     """
 
     filepaths = []

@@ -39,7 +39,7 @@ def images_to_z(images:np.ndarray[np.uint8, 3], sample_pixel_locations:list[tupl
     Generate Z from image list and sample pixel locations
 
     Parameters:
-    images[j] : the jth images in list of 2D images
+    images[j] : the jth image in list of 2D images
     sample_pixel_pos[i] : (x, y) position of the ith pixel in sample pixels
 
     Returns:
@@ -128,7 +128,8 @@ def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np
     Read the image_list.txt and read all images included in the list. Then reconstruct those LDR images into a HDR image.
 
     Parameters:
-    
+    channels[i,j,x,y] : the pixel value of pixel location (x, y) in the ith channel of image j
+    lnt[j]   : The log delta t or log shutter speed for image j
 
     Returns:
     hdr_image[x,y,i] : the HDR value (float32) of pixel location (x, y) in the ith channel
@@ -140,8 +141,9 @@ def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np
     w = weight_function()
     l = 10
 
-    plt.figure(figsize=(10, 10))
-    color = ['bx','gx','rx']
+    if save:
+        plt.figure(figsize=(10, 10))
+        color = ['bx','gx','rx']
 
     hdr_image = np.zeros((H, W, 3), dtype=np.float32)
     exponential = np.vectorize(lambda x:math.exp(x))
@@ -154,25 +156,27 @@ def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np
         # Construct radiance map
         lnE = construct_radiance_map(channel, g, lnt, w)
         hdr_image[..., i] = exponential(lnE)
-        plt.plot(g, range(256), color[i])
-
-    # Show response curve
-    print("save response curve")
-
-    plt.ylabel('pixel value Z')
-    plt.xlabel('log exposure X')
-    plt.savefig('response-curve.png')
-
-    # Display Radiance map with pseudo-color image (log value)
-    print("save radiance map")
-
-    plt.figure(figsize=(12,8))
-    plt.imshow(np.log(cv2.cvtColor(hdr_image, cv2.COLOR_BGR2GRAY)), cmap='jet')
-    plt.colorbar()
-    plt.savefig('radiance-map.png')
+        if save:
+            plt.plot(g, range(256), color[i])
 
     if save:
+        # Show response curve
+        print("save response curve")
+
+        plt.ylabel('pixel value Z')
+        plt.xlabel('log exposure X')
+        plt.savefig('response-curve.png')
+
+        # Display Radiance map with pseudo-color image (log value)
+        print("save radiance map")
+
+        plt.figure(figsize=(12,8))
+        plt.imshow(np.log(cv2.cvtColor(hdr_image, cv2.COLOR_BGR2GRAY)), cmap='jet')
+        plt.colorbar()
+        plt.savefig('radiance-map.png')
+
         print("save hdr image")
+
         utils.save_hdr_image(hdr_image, 'hdr')
 
     return hdr_image
