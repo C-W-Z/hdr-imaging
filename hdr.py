@@ -222,15 +222,16 @@ def hdr_reconstruction(img_dir:str, align:bool=True) -> np.ndarray[np.float32, 3
 
     channels, lnt = read_ldr_images(img_dir, align)
 
-    height, width = channels[0][0].shape
-    pixel_positions = pick_sample_pixels(height, width)
+    H, W = channels[0][0].shape
+    padding = math.ceil(min(H, W) * 0.05)
+    pixel_positions = pick_sample_pixels(H, W, padding=padding)
     w = weight_function()
     l = 10
 
     plt.figure(figsize=(10, 10))
     color = ['bx','gx','rx']
 
-    hdr_image = np.zeros((height, width, 3), dtype=np.float32)
+    hdr_image = np.zeros((H, W, 3), dtype=np.float32)
     exponential = np.vectorize(lambda x:math.exp(x))
 
     # channel 0,1,2 = B,G,R
@@ -259,5 +260,5 @@ def hdr_reconstruction(img_dir:str, align:bool=True) -> np.ndarray[np.float32, 3
     return hdr_image
 
 if __name__ == '__main__':
-    hdr_reconstruction('img/test1', False)
-    # hdr_reconstruction('img/test2', True)
+    # hdr_reconstruction('img/test1', False)
+    hdr_reconstruction('img/test2', False)
