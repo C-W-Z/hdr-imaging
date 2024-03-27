@@ -1,4 +1,3 @@
-import os
 import cv2
 import numpy as np
 from enum import IntEnum
@@ -15,22 +14,19 @@ NEIGHBORS = np.array([[-1, -1], [ 0, -1], [ 1, -1],
 
 def median_threshold(images:list[cv2.Mat | np.ndarray[np.uint8, 3]], save=False) -> cv2.Mat | list[np.ndarray[np.uint8, 2]]:
     binary_imgs = []
-    # const = [5, 35, 90, 110]
-    # const = [0, 0, 0, 0, 0, 0, 0, 0, 5, 10, 10, 10, 10, 10, 0, 0]
     for i, img in enumerate(images):
         gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         # thres = np.mean(img)
         # thres = np.median(img)
         thres = (np.median(img) + np.mean(img)) / 2
         # print(np.median(img), np.mean(img), thres)
-        # thres += const[i]
-        _, binary_image = cv2.threshold(gray_img, thres, 255, cv2.THRESH_BINARY)
-        # _, high = cv2.threshold(gray_img, thres + 5, 255, cv2.THRESH_BINARY)
-        # _, low = cv2.threshold(gray_img, thres - 5, 255, cv2.THRESH_BINARY)
-        # different_pixels = np.where(high != low)
-        # binary_image = high
-        # binary_image[different_pixels] = 128
+        # _, binary_image = cv2.threshold(gray_img, thres, 255, cv2.THRESH_BINARY)
         # _, binary_image = cv2.threshold(gray_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        _, high = cv2.threshold(gray_img, thres + 5, 255, cv2.THRESH_BINARY)
+        _, low = cv2.threshold(gray_img, thres - 5, 255, cv2.THRESH_BINARY)
+        different_pixels = np.where(high != low)
+        binary_image = high
+        binary_image[different_pixels] = 128
         if save:
             cv2.imwrite(f'binary_image_{i+1}.jpg', binary_image)
         binary_imgs.append(binary_image)
@@ -109,28 +105,6 @@ def mtb(images:list[cv2.Mat | np.ndarray[np.uint8, 3]], std_img_idx:int, hierarc
         # if save:
         #     cv2.imwrite(f'aligned_image_{i+1}.jpg', results[i])
     return results
-
-def read_ldr_images(source_dir:str):
-    filepaths = []
-    exposure_times = []
-
-    with open(os.path.join(source_dir, 'image_list.txt'), 'r') as img_list:
-        for line in img_list:
-            line = line.lstrip()
-            if len(line) == 0 or line.startswith('#'):
-                continue
-            filename, shutter_speed, *_ = line.split()
-            filepaths.append(os.path.join(source_dir, filename))
-            exposure_times.append(shutter_speed)
-
-    images = [cv2.imread(path, cv2.IMREAD_COLOR) for path in filepaths]
-    assert(len(images) == len(exposure_times))
-
-    # lnt = np.log(np.array(exposure_times, dtype=np.float32))
-    # print(lnt)
-
-    median_threshold(images, True)
-    mtb(images, 2, 5, True)
 
 def align(images:list[cv2.Mat | np.ndarray[np.uint8, 3]], alignType:AlignType, std_img_idx:int=-1, hierarchy:int=5):
     # Align input images based on Median Threshold Bitwise method 
