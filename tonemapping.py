@@ -3,8 +3,9 @@ import cv2
 import numpy as np
 
 def tonemappingDrago(hdr:np.ndarray[np.float32, 3], filename:str):
-    tonemap = cv2.createTonemapDrago(4, 1.5, 1.5)
+    tonemap = cv2.createTonemapDrago(1, 0.7)
     ldr = tonemap.process(hdr)
+    ldr = 3 * ldr
     cv2.imwrite(f"{filename}.png", ldr * 255)
 
 if __name__ == '__main__':

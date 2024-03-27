@@ -258,5 +258,5 @@ def hdr_reconstruction(img_dir:str) -> np.ndarray[np.float32, 3]:
     return hdr_image
 
 if __name__ == '__main__':
-    img_dir = 'img/test1'
+    img_dir = 'img/test2'
     hdr_reconstruction(img_dir)
