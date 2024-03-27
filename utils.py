@@ -3,8 +3,9 @@ import cv2
 import numpy as np
 import OpenEXR
 import Imath
+from align import AlignType
 
-def read_ldr_images(source_dir:str, align:bool) -> tuple[np.ndarray[np.uint8, 4], np.ndarray[np.float32]]:
+def read_ldr_images(source_dir:str) -> tuple[list[cv2.Mat | np.ndarray[np.uint8, 3]], np.ndarray[np.float32], AlignType, int]:
     """
     Read the image_list.txt and read all images included in the list. Then converts images into r,g,b channels and log of exposure times
 
@@ -18,32 +19,44 @@ def read_ldr_images(source_dir:str, align:bool) -> tuple[np.ndarray[np.uint8, 4]
 
     filepaths = []
     exposure_times = []
+    alignType = AlignType.NONE
+    std_img_idx = -1
 
     with open(os.path.join(source_dir, 'image_list.txt'), 'r') as img_list:
         for line in img_list:
-            line = line.lstrip()
+            line = line.strip()
             if len(line) == 0 or line.startswith('#'):
                 continue
-            filename, shutter_speed, *_ = line.split()
-            filepaths.append(os.path.join(source_dir, filename))
-            exposure_times.append(shutter_speed)
+            if line.startswith('ALIGN'):
+                line.replace(' ', '')
+                t = line.split('=')[1]
+                if t == 1 or t == 'OUR':
+                    alignType = AlignType.OUR
+                elif t == 2 or t == 'CV2':
+                    alignType = AlignType.CV2
+                elif t != 0 and t != 'NONE':
+                    print(f"error: {line}")
+            elif line.startswith('STD'):
+                line.replace(' ', '')
+                std_img_idx = int(line.split('=')[1])
+            else:
+                filename, shutter_speed, *_ = line.split()
+                filepaths.append(os.path.join(source_dir, filename))
+                exposure_times.append(shutter_speed)
 
     images = [cv2.imread(path, cv2.IMREAD_COLOR) for path in filepaths]
     assert(len(images) == len(exposure_times))
 
-    # Align input images based on Median Threshold Bitwise method 
-    if align:
-        alignMTB = cv2.createAlignMTB()
-        alignMTB.process(images, images)
+    lnt = np.log(np.array(exposure_times, dtype=np.float32))
 
+    return (images, lnt, alignType, std_img_idx)
+
+def ldr_to_channels(images:list[cv2.Mat | np.ndarray[np.uint8, 3]]) -> list[np.ndarray[np.uint8, 3]]:
     channels = [None] * 3
     # channel 0,1,2 = B,G,R
     for i in range(3):
         channels[i] = np.array([img[:, :, i] for img in images], dtype=np.uint8)
-
-    lnt = np.log(np.array(exposure_times, dtype=np.float32))
-
-    return (channels, lnt)
+    return channels
 
 def read_hdr_image(filepath:str) -> np.ndarray[np.float32, 3]:
     """

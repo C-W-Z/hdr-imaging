@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import utils
+import align
 
 def weight_function():
     return np.array([z+1 if z < 128 else 256-z for z in range(256)], dtype=np.float32)
@@ -122,18 +123,16 @@ def construct_radiance_map(images:np.ndarray[np.uint8, 3], g:np.ndarray[np.float
     lnE = np.average(g_lnt_map, axis=0, weights=w_map)
     return lnE
 
-def hdr_reconstruction(img_dir:str, align:bool=True) -> np.ndarray[np.float32, 3]:
+def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np.float32], save=False) -> np.ndarray[np.float32, 3]:
     """
     Read the image_list.txt and read all images included in the list. Then reconstruct those LDR images into a HDR image.
 
     Parameters:
-    img_dir : the path of directory containing image_list.txt and LDR images
+    
 
     Returns:
     hdr_image[x,y,i] : the HDR value (float32) of pixel location (x, y) in the ith channel
     """
-
-    channels, lnt = utils.read_ldr_images(img_dir, align)
 
     H, W = channels[0][0].shape
     padding = math.ceil(min(H, W) * 0.05)
@@ -158,20 +157,29 @@ def hdr_reconstruction(img_dir:str, align:bool=True) -> np.ndarray[np.float32, 3
         plt.plot(g, range(256), color[i])
 
     # Show response curve
+    print("save response curve")
+
     plt.ylabel('pixel value Z')
     plt.xlabel('log exposure X')
     plt.savefig('response-curve.png')
 
     # Display Radiance map with pseudo-color image (log value)
+    print("save radiance map")
+
     plt.figure(figsize=(12,8))
     plt.imshow(np.log(cv2.cvtColor(hdr_image, cv2.COLOR_BGR2GRAY)), cmap='jet')
     plt.colorbar()
     plt.savefig('radiance-map.png')
 
-    utils.save_hdr_image(hdr_image, 'hdr')
+    if save:
+        print("save hdr image")
+        utils.save_hdr_image(hdr_image, 'hdr')
 
     return hdr_image
 
 if __name__ == '__main__':
-    # hdr_reconstruction('img/test1', False)
-    hdr_reconstruction('img/test2', False)
+
+    images, lnt, alignType, std_img_idx = utils.read_ldr_images('img/test2')
+    images = align.align(images, alignType, std_img_idx, 5)
+    channels = utils.ldr_to_channels(images)
+    hdr_reconstruction(channels, lnt, True)

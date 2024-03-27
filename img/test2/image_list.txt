@@ -1,5 +1,9 @@
-# Number of Images
-# 16
+# Number of images
+# 4
+# Need alignment using our implementation
+ALIGN=OUR
+# Standard images index = 2
+STD=2
 # Filename                     exposure
 StLouisArchMultExpEV-4.72.jpeg 0.037944
 StLouisArchMultExpEV-1.82.jpeg 0.283221

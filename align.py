@@ -1,6 +1,13 @@
 import os
 import cv2
 import numpy as np
+from enum import IntEnum
+import utils
+
+class AlignType(IntEnum):
+    NONE = 0
+    OUR = 1
+    CV2 = 2
 
 NEIGHBORS = np.array([[-1, -1], [ 0, -1], [ 1, -1],
                       [-1,  0], [ 0,  0], [ 1,  0],
@@ -17,12 +24,12 @@ def median_threshold(images:list[cv2.Mat | np.ndarray[np.uint8, 3]], save=False)
         # thres = (np.median(img) + np.mean(img)) / 2
         # print(np.median(img), np.mean(img), thres)
         # thres += const[i]
-        # _, binary_image = cv2.threshold(gray_img, thres, 255, cv2.THRESH_BINARY)
-        _, high = cv2.threshold(gray_img, thres + 5, 255, cv2.THRESH_BINARY)
-        _, low = cv2.threshold(gray_img, thres - 5, 255, cv2.THRESH_BINARY)
-        different_pixels = np.where(high != low)
-        binary_image = high
-        binary_image[different_pixels] = 128
+        _, binary_image = cv2.threshold(gray_img, thres, 255, cv2.THRESH_BINARY)
+        # _, high = cv2.threshold(gray_img, thres + 5, 255, cv2.THRESH_BINARY)
+        # _, low = cv2.threshold(gray_img, thres - 5, 255, cv2.THRESH_BINARY)
+        # different_pixels = np.where(high != low)
+        # binary_image = high
+        # binary_image[different_pixels] = 128
         # _, binary_image = cv2.threshold(gray_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         if save:
             cv2.imwrite(f'binary_image_{i+1}.jpg', binary_image)
@@ -77,13 +84,11 @@ def recursive_find_best_shifts(image:cv2.Mat | np.ndarray[np.uint8, 2], std_img:
     best_shift = best_delta
     return best_shift
 
-def mtb(images:list[cv2.Mat | np.ndarray[np.uint8, 3]], std_img_idx:int, hierarchy:int=5, save=False) -> list[cv2.Mat | np.ndarray[np.uint8, 3]]:
+def mtb(images:list[cv2.Mat | np.ndarray[np.uint8, 3]], std_img_idx:int, hierarchy:int=5) -> list[cv2.Mat | np.ndarray[np.uint8, 3]]:
     P = len(images)
     assert(std_img_idx >= 0 and std_img_idx < P)
     assert(images[std_img_idx].shape == img.shape for img in images)
-    # H, W = std_img.shape[:2]
     bin = median_threshold(images)
-    # std_bin = bin[std_img_idx]
 
     best_shifts = [(0, 0)] * P
     for i in range(std_img_idx - 1, -1, -1):
@@ -96,13 +101,13 @@ def mtb(images:list[cv2.Mat | np.ndarray[np.uint8, 3]], std_img_idx:int, hierarc
     # for i in range(P):
     #     best_shifts[i] = recursive_find_best_shifts(bin[i], bin[std_img_idx], hierarchy)
 
-    print(best_shifts)
+    print(f"MTB Shifts = {best_shifts}")
 
     results = []
     for i, img in enumerate(images):
         results.append(translation(img, best_shifts[i][0], best_shifts[i][1]))
-        if save:
-            cv2.imwrite(f'aligned_image_{i+1}.jpg', results[i])
+        # if save:
+        #     cv2.imwrite(f'aligned_image_{i+1}.jpg', results[i])
     return results
 
 def read_ldr_images(source_dir:str):
@@ -127,5 +132,20 @@ def read_ldr_images(source_dir:str):
     median_threshold(images, True)
     mtb(images, 2, 5, True)
 
+def align(images:list[cv2.Mat | np.ndarray[np.uint8, 3]], alignType:AlignType, std_img_idx:int=-1, hierarchy:int=5):
+    # Align input images based on Median Threshold Bitwise method 
+    if alignType == AlignType.CV2:
+        alignMTB = cv2.createAlignMTB()
+        alignMTB.process(images, images)
+    elif alignType == AlignType.OUR:
+        if std_img_idx < 0:
+            std_img_idx = len(images) // 2
+        images = mtb(images, std_img_idx, hierarchy)
+
+    return images
+
 if __name__ == '__main__':
-    read_ldr_images('img/test2')
+
+    images, lnt, alignType, std_img_idx = utils.read_ldr_images('img/test2')
+    median_threshold(images, save=True)
+    images = align(images, alignType, std_img_idx, 5)
