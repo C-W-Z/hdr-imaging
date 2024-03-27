@@ -124,7 +124,7 @@ def construct_radiance_map(images:np.ndarray[np.uint8, 3], g:np.ndarray[np.float
     lnE = np.average(g_lnt_map, axis=0, weights=w_map)
     return lnE
 
-def read_ldr_images(source_dir:str) -> tuple[np.ndarray[np.uint8, 4], np.ndarray[np.float32]]:
+def read_ldr_images(source_dir:str, align:bool) -> tuple[np.ndarray[np.uint8, 4], np.ndarray[np.float32]]:
     """
     Read the image_list.txt and read all images included in the list. Then converts images into r,g,b channels and log of exposure times
 
@@ -152,8 +152,9 @@ def read_ldr_images(source_dir:str) -> tuple[np.ndarray[np.uint8, 4], np.ndarray
     assert(len(images) == len(exposure_times))
 
     # Align input images based on Median Threshold Bitwise method 
-    alignMTB = cv2.createAlignMTB()
-    alignMTB.process(images, images)
+    if align:
+        alignMTB = cv2.createAlignMTB()
+        alignMTB.process(images, images)
 
     channels = [None] * 3
     # channel 0,1,2 = B,G,R
@@ -208,7 +209,7 @@ def save_hdr_image(hdr_image:np.ndarray[np.float32, 3], filename:str) -> None:
     exr.writePixels({'R': R, 'G': G, 'B': B})
     exr.close()
 
-def hdr_reconstruction(img_dir:str) -> np.ndarray[np.float32, 3]:
+def hdr_reconstruction(img_dir:str, align:bool=True) -> np.ndarray[np.float32, 3]:
     """
     Read the image_list.txt and read all images included in the list. Then reconstruct those LDR images into a HDR image.
 
@@ -219,7 +220,7 @@ def hdr_reconstruction(img_dir:str) -> np.ndarray[np.float32, 3]:
     hdr_image[x,y,i] : the HDR value (float32) of pixel location (x, y) in the ith channel
     """
 
-    channels, lnt = read_ldr_images(img_dir)
+    channels, lnt = read_ldr_images(img_dir, align)
 
     height, width = channels[0][0].shape
     pixel_positions = pick_sample_pixels(height, width)
@@ -258,5 +259,5 @@ def hdr_reconstruction(img_dir:str) -> np.ndarray[np.float32, 3]:
     return hdr_image
 
 if __name__ == '__main__':
-    img_dir = 'img/test2'
-    hdr_reconstruction(img_dir)
+    hdr_reconstruction('img/test1', False)
+    # hdr_reconstruction('img/test2', True)
