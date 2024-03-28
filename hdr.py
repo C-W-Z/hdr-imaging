@@ -136,7 +136,7 @@ def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np
     hdr_image[x,y,i] : the HDR value (float32) of pixel location (x, y) in the ith channel
     """
 
-    print("start hdr reconstruction ...")
+    print("start HDR reconstruction ...")
 
     H, W = channels[0][0].shape
     padding = math.ceil(min(H, W) * 0.05)
@@ -148,7 +148,6 @@ def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np
         color = ['bx','gx','rx']
 
     hdr_image = np.zeros((H, W, 3), dtype=np.float32)
-    exponential = np.vectorize(lambda x:math.exp(x))
 
     # channel 0,1,2 = B,G,R
     for i, channel in enumerate(channels):
@@ -157,7 +156,7 @@ def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np
         g, _ = solve_response_function(Z, lnt, l, w)
         # Construct radiance map
         lnE = construct_radiance_map(channel, g, lnt, w)
-        hdr_image[..., i] = exponential(lnE)
+        hdr_image[..., i] = np.exp(lnE)
         if save:
             plt.plot(g, range(256), color[i])
 

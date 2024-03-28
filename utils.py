@@ -70,7 +70,7 @@ def read_hdr_image(filepath:str) -> np.ndarray[np.float32, 3]:
     filepath : the path of the .hdr file
 
     Returns:
-    hdr_image[x,y,i] : the HDR value (float32) of pixel location (x, y) in the ith channel
+    hdr_image[x,y,i] : the HDR value (float32) of pixel location (x, y) in the ith channel (BGR)
     """
 
     exr = OpenEXR.InputFile(filepath)
@@ -94,7 +94,7 @@ def save_hdr_image(hdr_image:np.ndarray[np.float32, 3], filename:str) -> None:
     filename : the name of the .hdr file to save
     """
 
-    print("saving hdr image ...")
+    print("saving HDR image ...")
 
     H, W, _ = hdr_image.shape
     header = OpenEXR.Header(W, H)
