@@ -42,32 +42,33 @@ def photographic_global(hdr:np.ndarray[np.float32, 3], a:float, Lwhite:float, fi
 
     cv2.imwrite(f"{filename}.png", ldr)
 
-def bilateral(gray_img:np.ndarray[np.float32, 2], sigma_range:float, contrast:float=np.log(5)):
-    H, W = gray_img.shape
-    gray_img = np.log(gray_img)
-    low = cv2.bilateralFilter(gray_img, -1, sigma_range, 0.02 * max(H, W))
+def bilateral_filtering(hdr:np.ndarray[np.float32, 2], sigma_range:float, contrast:float, a:float, Lwhite:float, filename:str):
+
+    Lworld = to_gray(hdr)
+    H, W = Lworld.shape
+
+    gray_img = np.log(Lworld)
+
+    print(0.01 * max(H, W))
+    low = cv2.bilateralFilter(gray_img, -1, sigma_range, max(10, 0.01 * max(H, W)))
     high = gray_img - low
+
     factor = contrast / (np.max(gray_img) - np.min(gray_img))
     log_abs_scale = np.max(gray_img) * factor
     print(factor, log_abs_scale)
-    new_gray = low * factor + high - log_abs_scale
-    return np.exp(new_gray), np.exp(low), np.exp(high)
 
-def bilateral_filtering(hdr:np.ndarray[np.float32, 2], sigma_range:float, contrast:float, a:float, Lwhite:float, filename:str):
-    Lworld = to_gray(hdr)
-    Ld, low, high = bilateral(Lworld, sigma_range, contrast)
+    new_gray = low * factor + high - log_abs_scale
+
+    low = np.exp(low)
+    high = np.exp(high)
+    Ld = np.exp(new_gray)
+
     cv2.imwrite("bilateral_low.png", single_global(low, a, Lwhite) * 255)
     cv2.imwrite("bilateral_high.png", single_global(high, a, Lwhite) * 255)
     cv2.imwrite("bilateral.png", single_global(Ld, a, Lwhite) * 255)
 
-    # factor = contrast / (np.max(np.log(Lworld)) - np.min(np.log(Lworld)))
-    # c = np.exp(np.max(low) * factor)
-
     ldr = np.zeros_like(hdr, dtype=np.uint8)
     for i in range(3):
-        # ldr[:,:,i] = hdr[:,:,i] * Ld / Lworld
-        # print(np.max(ldr[:,:,i]), np.min(ldr[:,:,i]))
-        # ldr[:,:,i] = (ldr[:,:,i]) / (np.max(ldr[:,:,i]) - np.min(ldr[:,:,i])) * 255
         ldr[:,:,i] = single_global(hdr[:,:,i] * Ld / Lworld, a, Lwhite) * 255
 
     cv2.imwrite(f"{filename}.png", ldr)
@@ -77,4 +78,6 @@ if __name__ == '__main__':
     hdr_image = utils.read_hdr_image(filename)
     # cv2_drago(hdr_image, 2, 0.9, 0.6, 'ldr')
     # photographic_global(hdr_image, 2, 100, "ldr")
-    bilateral_filtering(hdr_image, 0.4, 5, 10, 100, 'ldr')
+    # bilateral_filtering(hdr_image, 0.4, np.log(5), 5, 100, 'ldr')
+    bilateral_filtering(hdr_image, 2, 5, 10, 100, 'ldr')
+    # bilateral_filtering(hdr_image, 0.6, 8, 7, 100, 'ldr')
