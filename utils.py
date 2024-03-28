@@ -46,6 +46,8 @@ def read_ldr_images(source_dir:str) -> tuple[list[cv2.Mat | np.ndarray[np.uint8,
                 filepaths.append(os.path.join(source_dir, filename))
                 exposure_times.append(shutter_speed)
 
+    print(f"reading files: {filepaths}")
+
     images = [cv2.imread(path, cv2.IMREAD_COLOR) for path in filepaths]
     assert(len(images) == len(exposure_times))
 
@@ -91,6 +93,8 @@ def save_hdr_image(hdr_image:np.ndarray[np.float32, 3], filename:str) -> None:
     Parameters:
     filename : the name of the .hdr file to save
     """
+
+    print("saving hdr image ...")
 
     H, W, _ = hdr_image.shape
     header = OpenEXR.Header(W, H)

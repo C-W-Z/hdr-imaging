@@ -97,7 +97,7 @@ def mtb(images:list[cv2.Mat | np.ndarray[np.uint8, 3]], std_img_idx:int, hierarc
     # for i in range(P):
     #     best_shifts[i] = recursive_find_best_shifts(bin[i], bin[std_img_idx], hierarchy)
 
-    print(f"MTB Shifts = {best_shifts}")
+    print(f"image shifts = {best_shifts}")
 
     results = []
     for i, img in enumerate(images):
@@ -107,11 +107,14 @@ def mtb(images:list[cv2.Mat | np.ndarray[np.uint8, 3]], std_img_idx:int, hierarc
     return results
 
 def align(images:list[cv2.Mat | np.ndarray[np.uint8, 3]], alignType:AlignType, std_img_idx:int=-1, hierarchy:int=5):
-    # Align input images based on Median Threshold Bitwise method 
+
+    # Align input images based on Median Threshold Bitwise method
     if alignType == AlignType.CV2:
+        print("using cv2 MTB alignment ...")
         alignMTB = cv2.createAlignMTB()
         alignMTB.process(images, images)
     elif alignType == AlignType.OUR:
+        print("using our MTB alignment ...")
         if std_img_idx < 0:
             std_img_idx = len(images) // 2
         images = mtb(images, std_img_idx, hierarchy)
