@@ -1,0 +1,15 @@
+#ALIGN=OUR
+#STD=6
+# Filename                         exposure
+HDRI_Sample_Scene_Window_-_01.jpg  0.015625
+HDRI_Sample_Scene_Window_-_02.jpg  0.03125
+HDRI_Sample_Scene_Window_-_03.jpg  0.0625
+HDRI_Sample_Scene_Window_-_04.jpg  0.125
+HDRI_Sample_Scene_Window_-_05.jpg  0.25
+HDRI_Sample_Scene_Window_-_06.jpg  0.5
+HDRI_Sample_Scene_Window_-_07.jpg  1
+HDRI_Sample_Scene_Window_-_08.jpg  2
+HDRI_Sample_Scene_Window_-_09.jpg  4
+HDRI_Sample_Scene_Window_-_10.jpg  8
+HDRI_Sample_Scene_Window_-_11.jpg  16
+HDRI_Sample_Scene_Window_-_12.jpg  32
