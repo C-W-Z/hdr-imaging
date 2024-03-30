@@ -1,5 +1,5 @@
 #ALIGN=OUR
-#STD=6
+#STD=5
 # Filename                         exposure
 HDRI_Sample_Scene_Window_-_01.jpg  0.015625
 HDRI_Sample_Scene_Window_-_02.jpg  0.03125

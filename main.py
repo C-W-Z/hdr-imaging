@@ -8,5 +8,5 @@ if __name__ == '__main__':
     hdr_img = hdr.hdr_reconstruction(channels, lnt, 50, True)
     utils.save_hdr_image(hdr_img, 'hdr')
     tonemapping.photographic_global(hdr_img, 2, 100, 'ldr')
-    
+
     print("\nDONE")

@@ -24,7 +24,9 @@ def pick_sample_pixels(H:int, W:int, N:int=400, padding:int=20) -> list[tuple[in
 
     H -= 2 * padding
     W -= 2 * padding
-    assert(N >= 256 and H * W >= N)
+    assert(N >= 256 and H * W >= 256)
+    if N > H * W:
+        N = H * W
     step = H * W // N
     pixels = []
     for i in range(N):
@@ -139,7 +141,8 @@ def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np
     print("start HDR reconstruction ...")
 
     H, W = channels[0][0].shape
-    padding = math.ceil(min(H, W) * 0.05)
+    padding = math.ceil(min(H, W) * 0.1)
+    print(f"padding = {padding}")
     pixel_positions = pick_sample_pixels(H, W, padding=padding)
     w = weight_function()
 
@@ -180,8 +183,8 @@ def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np
 
 if __name__ == '__main__':
 
-    images, lnt, alignType, std_img_idx = utils.read_ldr_images('img/test2')
+    images, lnt, alignType, std_img_idx = utils.read_ldr_images('img/test3')
     images = align.align(images, alignType, std_img_idx, 5)
     channels = utils.ldr_to_channels(images)
-    hdr_image = hdr_reconstruction(channels, lnt, 10, True)
-    utils.save_hdr_image(hdr_image, 'hdr')
+    hdr_image = hdr_reconstruction(channels, lnt, 20, True)
+    utils.save_hdr_image(hdr_image, 'hdr3')

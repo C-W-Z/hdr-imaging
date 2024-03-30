@@ -28,7 +28,7 @@ def median_threshold(images:list[cv2.Mat | np.ndarray[np.uint8, 3]], save=False)
         binary_image = high
         binary_image[different_pixels] = 128
         if save:
-            cv2.imwrite(f'binary_image_{i+1}.jpg', binary_image)
+            cv2.imwrite(f'bitmap_{i+1}.jpg', binary_image)
         binary_imgs.append(binary_image)
     return binary_imgs
 
@@ -123,6 +123,6 @@ def align(images:list[cv2.Mat | np.ndarray[np.uint8, 3]], alignType:AlignType, s
 
 if __name__ == '__main__':
 
-    images, lnt, alignType, std_img_idx = utils.read_ldr_images('img/test2')
+    images, lnt, alignType, std_img_idx = utils.read_ldr_images('img/test3')
     median_threshold(images, save=True)
     images = align(images, alignType, std_img_idx, 5)
