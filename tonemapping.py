@@ -5,8 +5,9 @@ import numpy as np
 def to_gray(hdr:np.ndarray):
     if hdr.ndim == 3:
         # channel order is BGR
+        return cv2.cvtColor(hdr, cv2.COLOR_BGR2GRAY) + 1e-6
         # return 0.27 * hdr[:,:,2] + 0.67 * hdr[:,:,1] + 0.06 * hdr[:,:,0] + 1e-6
-        return 0.299 * hdr[:,:,2] + 0.587 * hdr[:,:,1] + 0.114 * hdr[:,:,0] + 1e-6
+        # return 0.299 * hdr[:,:,2] + 0.587 * hdr[:,:,1] + 0.114 * hdr[:,:,0] + 1e-6
     return hdr
 
 def normalize(img):
@@ -123,13 +124,13 @@ def bilateral_filtering(hdr:np.ndarray[np.float32, 2], sigma_range:float, contra
     cv2.imwrite(f"{filename}.png", ldr)
 
 if __name__ == '__main__':
-    filename = 'red.hdr'
+    filename = 'hdr1.hdr'
     hdr_image = utils.read_hdr_image(filename)
     # npaces = np.vectorize(aces)
     # hdr_image = npaces(hdr_image)
     # cv2.imwrite("ldr.png", hdr_image * 255)
-    # cv2_drago(hdr_image, 2, 0.9, 0.6, 'ldr')
-    # gamma_mapping(hdr_image, 2.2, 1.5, 'ldr')
-    # gamma_map_color(hdr_image, 1, 1.8, 'ldr')
+    # cv2_drago(hdr_image, 2.8, 1, 0.7, 'ldr')
+    gamma_mapping(hdr_image, 2.1, 14, 'ldr')
+    # gamma_map_color(hdr_image, 2.2, 1.2, 'ldr')
     # photographic_global(hdr_image, 1, 50, 0.7, "ldr")
-    bilateral_filtering(hdr_image, 1, 5, 2, 100, 1, 'ldr')
+    # bilateral_filtering(hdr_image, 1, 4.5, 4, 25, 0.5, 'ldr')
