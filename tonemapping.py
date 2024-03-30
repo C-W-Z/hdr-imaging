@@ -5,8 +5,8 @@ import numpy as np
 def to_gray(hdr:np.ndarray):
     if hdr.ndim == 3:
         # channel order is BGR
-        # return 0.27 * hdr[:,:,2] + 0.67 * hdr[:,:,1] + 0.06 * hdr[:,:,0]
-        return 0.299 * hdr[:,:,2] + 0.587 * hdr[:,:,1] + 0.114 * hdr[:,:,0]
+        # return 0.27 * hdr[:,:,2] + 0.67 * hdr[:,:,1] + 0.06 * hdr[:,:,0] + 1e-6
+        return 0.299 * hdr[:,:,2] + 0.587 * hdr[:,:,1] + 0.114 * hdr[:,:,0] + 1e-6
     return hdr
 
 def normalize(img):
@@ -44,26 +44,30 @@ def single_global(Lworld:np.ndarray[np.float32, 2], a:float, Lwhite:float, epsil
 def gamma_mapping(hdr:np.ndarray[np.float32, 3], gamma:float, light:float, filename:str):
     Lworld = to_gray(hdr)
     print(np.max(Lworld), np.mean(Lworld), np.min(Lworld))
-    # L = Lworld / (1 / light + Lworld)
     Ld = np.power(Lworld, 1/gamma)
-    result = np.zeros_like(hdr)
+    ldr = np.zeros_like(hdr)
     for i in range(3):
-        # result[:,:,i] = np.power(hdr[:,:,i] / Lworld, 1/gamma) * L
-        result[:,:,i] = hdr[:,:,i] * Ld / Lworld * light
-        print(np.max(result[:,:,i]))
-    cv2.imwrite(f"{filename}.png", result * 255)
-    return result
+        ldr[:,:,i] = hdr[:,:,i] * Ld / Lworld
+        print(np.max(ldr[:,:,i]))
+    
+    ldr = cv2.normalize(ldr, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
+
+    cv2.imwrite(f"{filename}.png", ldr * light * 255)
+    return ldr
 
 def gamma_map_color(hdr:np.ndarray[np.float32, 3], gamma:float, light:float, filename:str):
     Lworld = to_gray(hdr)
     print(np.max(Lworld), np.mean(Lworld), np.min(Lworld))
     L = Lworld / (1 / light + Lworld)
-    result = np.zeros_like(hdr)
+    ldr = np.zeros_like(hdr)
     for i in range(3):
-        result[:,:,i] = np.power(hdr[:,:,i] / Lworld, 1/gamma) * L
-        print(np.max(result[:,:,i]))
-    cv2.imwrite(f"{filename}.png", result * 255)
-    return result
+        ldr[:,:,i] = np.power(hdr[:,:,i] / Lworld, 1/gamma) * L
+        print(np.max(ldr[:,:,i]))
+
+    ldr = cv2.normalize(ldr, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
+
+    cv2.imwrite(f"{filename}.png", ldr * light * 255)
+    return ldr
 
 def photographic_global(hdr:np.ndarray[np.float32, 3], a:float, Lwhite:float, epsilon:float, filename:str):
 
@@ -110,23 +114,22 @@ def bilateral_filtering(hdr:np.ndarray[np.float32, 2], sigma_range:float, contra
 
     ldr = np.zeros_like(hdr, dtype=np.uint8)
     for i in range(3):
-        # ldr[:,:,i] = normalize(hdr[:,:,i] * Ld / Lworld) * 255
+        # ldr[:,:,i] = hdr[:,:,i] * Ld / Lworld * 255
         ldr[:,:,i] = single_global(hdr[:,:,i] * Ld / Lworld, a, Lwhite, epsilon) * 255
-        # hdr[:,:,i] *= Ld / Lworld
+        # ldr[:,:,i] = cv2.normalize(ldr[:,:,i], None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
 
-    # Normalize to 0~1
     ldr = cv2.normalize(ldr, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
 
     cv2.imwrite(f"{filename}.png", ldr)
 
 if __name__ == '__main__':
-    filename = 'hdr1.hdr'
+    filename = 'red.hdr'
     hdr_image = utils.read_hdr_image(filename)
     # npaces = np.vectorize(aces)
     # hdr_image = npaces(hdr_image)
     # cv2.imwrite("ldr.png", hdr_image * 255)
     # cv2_drago(hdr_image, 2, 0.9, 0.6, 'ldr')
-    # gamma_mapping(hdr_image, 2.2, 0.5, 'ldr')
-    # gamma_map_color(hdr_image, 1, 1.4, 'ldr2')
-    # photographic_global(hdr_image, 2, 50, 1, "ldr")
-    bilateral_filtering(hdr_image, 0.5, 6, 20, 100, 1, 'ldr')
+    # gamma_mapping(hdr_image, 2.2, 1.5, 'ldr')
+    # gamma_map_color(hdr_image, 1, 1.8, 'ldr')
+    # photographic_global(hdr_image, 1, 50, 0.7, "ldr")
+    bilateral_filtering(hdr_image, 1, 5, 2, 100, 1, 'ldr')
