@@ -8,7 +8,7 @@ class AlignType(IntEnum):
     OUR = 1
     CV2 = 2
     def __str__(self):
-        return self.name.capitalize()
+        return self.name.upper()
 
 NEIGHBORS = np.array([[-1, -1], [ 0, -1], [ 1, -1],
                       [-1,  0], [ 0,  0], [ 1,  0],

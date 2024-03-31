@@ -10,7 +10,7 @@ class NormalizeType(IntEnum):
     ALL = 1
     CHANNEL = 2
     def __str__(self):
-        return self.name.capitalize()
+        return self.name.upper()
 
 def to_gray(hdr:np.ndarray):
     if hdr.ndim == 3:
