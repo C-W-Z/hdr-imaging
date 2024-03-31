@@ -41,7 +41,9 @@ def threshold_bitmaps(images:list[np.ndarray[np.uint8, 3]], threshold_type:Thres
 
         if save_dir != None:
             filename = f"bitmap_{threshold_type}_{gray_range}_{i+1}.jpg"
-            cv2.imwrite(os.path.join(save_dir, filename), binary_img)
+            filename = os.path.join(save_dir, filename)
+            print(f"saving bitmap to {filename}")
+            cv2.imwrite(filename, binary_img)
 
         bitmaps.append(binary_img)
 
@@ -114,7 +116,9 @@ def mtb(imgs:list[np.ndarray[np.uint8, 3]], std_img_idx:int, depth:int, threshol
         results.append(translation(img, best_shifts[i][0], best_shifts[i][1]))
         if save_dir != None and save_aligned:
             filename = f"aligned_{AlignType.OUR}_{std_img_idx}_{depth}_{threshold_type}_{gray_range}_{i+1}.jpg"
-            cv2.imwrite(os.path.join(save_dir, filename), results[i])
+            filename = os.path.join(save_dir, filename)
+            print(f"saving aligned image to {filename}")
+            cv2.imwrite(filename, results[i])
 
     return results
 
@@ -128,7 +132,9 @@ def align(imgs:list[np.ndarray[np.uint8, 3]], alignType:AlignType, std_img_idx:i
         if save_aligned:
             for i, img in imgs:
                 filename = f"aligned_{AlignType.CV2}_{i+1}.jpg"
-                cv2.imwrite(os.path.join(save_dir, filename), img)
+                filename = os.path.join(save_dir, filename)
+                print(f"saving aligned image to {filename}")
+                cv2.imwrite(filename, img)
 
     elif alignType == AlignType.OUR:
         print("using our MTB alignment ...")
@@ -136,10 +142,13 @@ def align(imgs:list[np.ndarray[np.uint8, 3]], alignType:AlignType, std_img_idx:i
             std_img_idx = len(imgs) // 2
         imgs = mtb(imgs, std_img_idx, depth, threshold_type, gray_range, save_dir, save_bitmaps, save_aligned)
 
+    else:
+        print(f"AlignType is {AlignType.NONE}")
+
     return imgs
 
-def main(input_dir:str, output_dir:str, save_bitmaps:bool, save_aligned:bool):
-    imgs, _, _, alignType, std_img_idx, depth, threshold_type, gray_range = utils.read_ldr_images(input_dir)
+def main(input_file:str, output_dir:str, save_bitmaps:bool, save_aligned:bool):
+    imgs, _, _, alignType, std_img_idx, depth, threshold_type, gray_range = utils.read_ldr_images(input_file)
     if save_bitmaps and not save_aligned:
         threshold_bitmaps(imgs, threshold_type, gray_range, output_dir)
     elif save_bitmaps or save_aligned:
@@ -148,25 +157,21 @@ def main(input_dir:str, output_dir:str, save_bitmaps:bool, save_aligned:bool):
         print("No file saved")
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Read LDR images from <input_directory>/image_list.txt & output bitmaps or aligned images to <output_directory>\n")
-    parser.add_argument("input_directory", type=str, help="Input directory path, must contain file 'image_list.txt'")
+    parser = argparse.ArgumentParser(description="Read LDR image & arguments from information in <input_file> & output bitmaps or aligned images to <output_directory>\n")
+    parser.add_argument("input_file", type=str, help="Input file (.txt) path")
     parser.add_argument("output_directory", type=str, help="Output directory path")
     parser.add_argument("-a", action="store_true", help="Output aligned images")
     parser.add_argument("-b", action="store_true", help="Output bitmaps")
 
-    usage = parser.format_usage()
-    usage = "align.py [-h] [-a] [-b] <input_directory> <output_directory>\nExample: python align.py img/test1 img/test1\n"
+    # usage = parser.format_usage()
+    usage = "align.py [-h] [-a] [-b] <input_file> <output_directory>\nExample: python align.py img/test2/image_list.txt img/test2\n"
     parser.usage = usage
 
     args = parser.parse_args()
 
-    if not os.path.isdir(args.input_directory):
-        print(f"error: {args.input_directory} is not a directory\n")
-        parser.print_help()
-        exit()
     if not os.path.isdir(args.output_directory):
         print(f"error: {args.output_directory} is not a directory\n")
         parser.print_help()
         exit()
 
-    main(args.input_directory, args.output_directory, args.b, args.a)
+    main(args.input_file, args.output_directory, args.b, args.a)

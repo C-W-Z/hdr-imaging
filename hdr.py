@@ -128,7 +128,7 @@ def construct_radiance_map(images:np.ndarray[np.uint8, 3], g:np.ndarray[np.float
 
 def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np.float32], l:int, save_dir:str=None) -> np.ndarray[np.float32, 3]:
     """
-    Read the image_list.txt and read all images included in the list. Then reconstruct those LDR images into a HDR image.
+    Read the input file (an image list) and read all images included in the list. Then reconstruct those LDR images into a HDR image.
 
     Parameters:
     channels[i,j,x,y] : the pixel value of pixel location (x, y) in the ith channel of image j
@@ -186,35 +186,28 @@ def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np
 
     return hdr_image
 
-def main(input_dir:str, output_directory:str, save:bool):
-    images, lnt, l, alignType, std_img_idx, depth, threshold_type, gray_range = utils.read_ldr_images(input_dir)
+def main(input_file:str, output_directory:str, save:bool):
+    images, lnt, l, alignType, std_img_idx, depth, threshold_type, gray_range = utils.read_ldr_images(input_file)
     images = align.align(images, alignType, std_img_idx, depth, threshold_type, gray_range)
     channels = utils.ldr_to_channels(images)
-    if save:
-        hdr_image = hdr_reconstruction(channels, lnt, l, output_directory)
-    else:
-        hdr_image = hdr_reconstruction(channels, lnt, l, None)
+    hdr_image = hdr_reconstruction(channels, lnt, l, output_directory if save else None)
     utils.save_hdr_image(hdr_image, os.path.join(output_directory, 'hdr.hdr'))
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Read LDR images from <input_directory>/image_list.txt & output the HDR image 'hdr.hdr' to <output_directory>\n")
-    parser.add_argument("input_directory", type=str, help="Input directory path, must contain file 'image_list.txt'")
+    parser = argparse.ArgumentParser(description="Read LDR images & arguments from information in <input_file> & output the HDR image 'hdr.hdr' to <output_directory>\n")
+    parser.add_argument("input_file", type=str, help="Input file (.txt) path")
     parser.add_argument("output_directory", type=str, help="Output directory path")
     parser.add_argument("-s", action="store_true", help="Output response curve 'response-curve.png' & radiance map 'radiance-map.png' in <output_directory>")
 
-    usage = parser.format_usage()
-    usage = "hdr.py [-h] [-s] <input_directory> <output_directory>\nExample: python hdr.py img/test1 img/test1\n"
+    # usage = parser.format_usage()
+    usage = "hdr.py [-h] [-s] <input_file> <output_directory>\nExample: python hdr.py img/test1/image_list.txt img/test1\n"
     parser.usage = usage
 
     args = parser.parse_args()
 
-    if not os.path.isdir(args.input_directory):
-        print(f"error: {args.input_directory} is not a directory\n")
-        parser.print_help()
-        exit()
     if not os.path.isdir(args.output_directory):
         print(f"error: {args.output_directory} is not a directory\n")
         parser.print_help()
         exit()
 
-    main(args.input_directory, args.output_directory, args.s)
+    main(args.input_file, args.output_directory, args.s)

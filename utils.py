@@ -4,37 +4,52 @@ import numpy as np
 from align import AlignType, ThresholdType
 from tonemap import NormalizeType
 
-def error(message:str):
+def perror(message:str):
     print(message)
     exit()
 
-def to_bool(value:str, line):
+def to_bool(value:str, file:str, line:int):
     try:
         return bool(value)
     except ValueError:
-        print(f"Error: {value} is not a valid bool value, Line {line+1}")
-        exit()
+        perror(f"Error in {file}, line {line+1}: {value} is not a valid bool value")
 
-def to_int(value:str, line):
+def to_int(value:str, file:str, line:int):
     try:
         return int(value)
     except ValueError:
-        print(f"Error: {value} is not a valid int value, Line {line+1}")
-        exit()
+        perror(f"Error in {file}, line {line+1}: {value} is not a valid int value")
 
-def to_float(value:str, line):
+def to_float(value:str, file:str, line:int):
     try:
         return float(value)
     except ValueError:
-        print(f"Error: {value} is not a valid float value, Line {line+1}")
-        exit()
+        perror(f"Error in {file}, line {line+1}: {value} is not a valid float value")
 
-def read_ldr_images(source_dir:str) -> tuple[list[cv2.Mat | np.ndarray[np.uint8, 3]], int, np.ndarray[np.float32], AlignType, int, int, ThresholdType, int]:
+def to_AlignType(value:str, file:str, line:int):
+    try:
+        return AlignType[value]
+    except KeyError:
+        perror(f"Error in {file}, line {line+1}: {value} is not a valid AlignType value")
+
+def to_ThresholdType(value:str, file:str, line:int):
+    try:
+        return ThresholdType[value]
+    except KeyError:
+        perror(f"Error in {file}, line {line+1}: {value} is not a valid ThresholdType value")
+
+def to_NormalizeType(value:str, file:str, line:int):
+    try:
+        return NormalizeType[value]
+    except KeyError:
+        perror(f"Error in {file}, line {line+1}: {value} is not a valid NormalizeType value")
+
+def read_ldr_images(image_list:str) -> tuple[list[cv2.Mat | np.ndarray[np.uint8, 3]], int, np.ndarray[np.float32], AlignType, int, int, ThresholdType, int]:
     """
-    Read the image_list.txt and read all images included in the list. Then converts images into r,g,b channels and log of exposure times
+    Read the image_list file (.txt) and read all images included in the list. Then converts images into r,g,b channels and log of exposure times
 
     Parameters:
-    source_dir : the path of directory containing image_list.txt and LDR images
+    image_list : the path of image_list.txt
 
     Returns:
     images[j] : the jth image
@@ -47,7 +62,7 @@ def read_ldr_images(source_dir:str) -> tuple[list[cv2.Mat | np.ndarray[np.uint8,
     gray_range : the range of intensities to ignore around threshold
     """
 
-    filepaths = []
+    images = []
     exposure_times = []
     l = 20
     align_type = AlignType.NONE
@@ -56,8 +71,10 @@ def read_ldr_images(source_dir:str) -> tuple[list[cv2.Mat | np.ndarray[np.uint8,
     threshold_type = ThresholdType.MEDIAN
     gray_range = 4
 
+    input_dir = os.path.dirname(image_list)
+
     try:
-        with open(os.path.join(source_dir, 'image_list.txt'), 'r') as img_list:
+        with open(image_list, 'r') as img_list:
             for i, line in enumerate(img_list):
                 line = line.split('#')[0].strip() # remove the comments starts with '#'
                 if len(line) == 0:
@@ -66,50 +83,42 @@ def read_ldr_images(source_dir:str) -> tuple[list[cv2.Mat | np.ndarray[np.uint8,
                 if line.startswith('ALIGN'):
                     line.replace(' ', '')
                     t = line.split('=')[1]
-                    try:
-                        align_type = AlignType[t]
-                    except KeyError:
-                        error(f"Error: {t} is not a valid AlignType, Line {i+1}")
+                    align_type = to_AlignType(t, image_list, i)
 
                 elif line.startswith('STD'):
                     line.replace(' ', '')
-                    std_img_idx = to_int(line.split('=')[1], i)
+                    std_img_idx = to_int(line.split('=')[1], image_list, i)
 
                 elif line.startswith('DEPTH'):
                     line.replace(' ', '')
-                    depth = to_int(line.split('=')[1], i)
+                    depth = to_int(line.split('=')[1], image_list, i)
 
                 elif line.startswith('THRESHOLD'):
                     line.replace(' ', '')
                     t = line.split('=')[1]
-                    try:
-                        threshold_type = ThresholdType[t]
-                    except KeyError:
-                        error(f"Error: {t} is not a valid ThresholdType, Line {i+1}")
+                    threshold_type = to_ThresholdType(t, image_list, i)
 
                 elif line.startswith('GRAYRANGE'):
                     line.replace(' ', '')
-                    gray_range = to_int(line.split('=')[1], i)
+                    gray_range = to_int(line.split('=')[1], image_list, i)
 
                 elif line.startswith('LAMBDA'):
                     line.replace(' ', '')
-                    l = to_float(line.split('=')[1], i)
+                    l = to_float(line.split('=')[1], image_list, i)
 
                 else:
                     parts = line.split()
                     if len(parts) >= 2:
                         filename, shutter_speed, *_ = parts
-                        filepaths.append(os.path.join(source_dir, filename))
+                        filepath = os.path.join(input_dir, filename)
+                        print(f"reading file {filepath}")
+                        img = cv2.imread(filepath, cv2.IMREAD_COLOR)
+                        if img is None:
+                            perror(f"Error: Can not read file {filepath}")
+                        images.append(img)
                         exposure_times.append(shutter_speed)
                     else:
-                        error(f"Error: Not enough arguments in image_list.txt, Line {i+1}")
-
-        print(f"reading files: {filepaths}")
-
-        images = [cv2.imread(path, cv2.IMREAD_COLOR) for path in filepaths]
-        for i, path in enumerate(filepaths):
-            if images[i] is None:
-                error(f"Error: Can not read file {path}")
+                        perror(f"Error in {image_list}, line {i+1}: Not enough arguments")
 
         assert(len(images) == len(exposure_times))
         lnt = np.log(np.array(exposure_times, dtype=np.float32))
@@ -117,7 +126,7 @@ def read_ldr_images(source_dir:str) -> tuple[list[cv2.Mat | np.ndarray[np.uint8,
         return (images, lnt, l, align_type, std_img_idx, depth, threshold_type, gray_range)
 
     except FileNotFoundError as e:
-        error(f"FileNotFoundError:{e}")
+        perror(f"FileNotFoundError: {e}")
 
 def ldr_to_channels(images:list[cv2.Mat | np.ndarray[np.uint8, 3]]) -> list[np.ndarray[np.uint8, 3]]:
     channels = [None] * 3
@@ -139,6 +148,8 @@ def read_hdr_image(filepath:str) -> np.ndarray[np.float32, 3]:
 
     print(f"reading {filepath}")
     hdr_image = cv2.imread(filepath, cv2.IMREAD_ANYDEPTH | cv2.IMREAD_COLOR)
+    if hdr_image is None:
+        perror(f"Error: Can not read file {filepath}")
     print(f"size = {hdr_image.shape}")
     return hdr_image
 
@@ -157,57 +168,53 @@ def save_hdr_image(hdr_image:np.ndarray[np.float32, 3], filename:str) -> None:
     else:
         cv2.imwrite(f"{filename}.hdr", hdr_image)
 
-def process_normalize_type(normalize:str, line:int):
-    try:
-        return NormalizeType[normalize]
-    except KeyError:
-        error(f"Error: {normalize} is not a valid NormalizeType, Line {line+1}")
-
-def read_tonemap_argument(args:list, line:int) -> list:
+def read_tonemap_arguments(args:list, file:str, line:int) -> list:
     if len(args) < 1:
-        error(f"Error: Not enough arguments in tonemap.txt, Line {line+1}")
+        perror(f"Error in {file}, line {line+1}: Not enough arguments")
 
     algorithm = args[0]
 
     if algorithm == 'gamma_intensity' or algorithm == 'gamma_color':
         if len(args) != 4:
-            error(f"Error: Need 4 arguments, but {len(args)} in tonemap.txt, Line {line+1}")
-        gamma = to_float(args[1], line)
-        brightness = to_float(args[2], line)
-        normalize = process_normalize_type(args[3], line)
+            perror(f"Error in {file}, line {line+1}: Need 4 arguments, but got {len(args)}")
+        gamma = to_float(args[1], file, line)
+        brightness = to_float(args[2], file, line)
+        normalize = to_NormalizeType(args[3], file, line)
         return [algorithm, gamma, brightness, normalize]
 
     elif algorithm == 'global':
         if len(args) != 6:
-            error(f"Error: Need 6 arguments, but {len(args)} in tonemap.txt, Line {line+1}")
-        a = to_float(args[1], line)
-        Lwhite = to_float(args[2], line)
-        delta = to_float(args[3], line)
-        normalize = process_normalize_type(args[4], line)
-        save_gray = to_bool(args[5], line)
+            perror(f"Error in {file}, line {line+1}: Need 6 arguments, but got {len(args)}")
+        a = to_float(args[1], file, line)
+        Lwhite = to_float(args[2], file, line)
+        delta = to_float(args[3], file, line)
+        normalize = to_NormalizeType(args[4], file, line)
+        save_gray = to_bool(args[5], file, line)
         return [algorithm, a, Lwhite, delta, normalize, save_gray]
 
     elif algorithm == 'bilateral':
         if len(args) != 8:
-            error(f"Error: Need 8 arguments, but {len(args)} in tonemap.txt, Line {line+1}")
-        sigma_range = to_float(args[1], line)
-        contrast = to_float(args[2], line)
-        a = to_float(args[3], line)
-        Lwhite = to_float(args[4], line)
-        delta = to_float(args[5], line)
-        normalize = process_normalize_type(args[6], line)
-        save_filtered = to_bool(args[7], line)
+            perror(f"Error in {file}, line {line+1}: Need 8 arguments, but got {len(args)}")
+        sigma_range = to_float(args[1], file, line)
+        contrast = to_float(args[2], file, line)
+        a = to_float(args[3], file, line)
+        Lwhite = to_float(args[4], file, line)
+        delta = to_float(args[5], file, line)
+        normalize = to_NormalizeType(args[6], file, line)
+        save_filtered = to_bool(args[7], file, line)
         return [algorithm, sigma_range, contrast, a, Lwhite, delta, normalize, save_filtered]
 
     else:
-        error(f"Error: Algorithm name {algorithm} not found in tonemap.txt, Line {line+1}")
+        perror(f"Error in {file}, line {line+1}: Algorithm name {algorithm} not found")
 
-def read_tonemap_settings(source_dir:str):
+def read_tonemap_settings(setting_file:str) -> tuple[np.ndarray[np.float32, 3],list]:
     hdr_img = None
     arg_list = []
 
+    input_dir = os.path.dirname(setting_file)
+
     try:
-        with open(os.path.join(source_dir, 'tonemap.txt'), 'r') as setting:
+        with open(setting_file, 'r') as setting:
             for i, line in enumerate(setting):
                 line = line.split('#')[0].strip()
                 if len(line) == 0:
@@ -215,12 +222,12 @@ def read_tonemap_settings(source_dir:str):
                 if line.startswith('FILE'):
                     line.replace(' ', '')
                     hdr_filename = line.split('=')[1]
-                    hdr_img = read_hdr_image(os.path.join(source_dir, hdr_filename))
+                    hdr_img = read_hdr_image(os.path.join(input_dir, hdr_filename))
                 else:
                     args = line.split()
-                    arg_list.append(read_tonemap_argument(args, i))
+                    arg_list.append(read_tonemap_arguments(args, setting_file, i))
 
         return (hdr_img, arg_list)
 
     except FileNotFoundError as e:
-        error(f"FileNotFoundError:{e}")
+        perror(f"FileNotFoundError: {e}")
