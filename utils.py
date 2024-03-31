@@ -2,7 +2,7 @@ import os
 import cv2
 import numpy as np
 from align import AlignType, ThresholdType
-from tonemapping import NormalizeType
+from tonemap import NormalizeType
 
 def error(message:str):
     print(message)
