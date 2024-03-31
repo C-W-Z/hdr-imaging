@@ -106,7 +106,7 @@ def solve_response_function(Z:np.ndarray[np.uint8, 2], lnt:np.ndarray[np.float32
     x = x.ravel()
     return (x[:256], x[256:])
 
-def construct_radiance_map(images:np.ndarray[np.uint8, 3], g:np.ndarray[np.float32], lnt:np.ndarray[np.float32], w:np.ndarray[np.float32]) -> np.ndarray[np.float32]:
+def construct_radiance_map(images:np.ndarray[np.uint8, 3], g:np.ndarray[np.float32], lnt:np.ndarray[np.float32], w:np.ndarray[np.float32]) -> np.ndarray[np.float32, 2]:
     """
     Construct the radiance map (size is same as images)
 
