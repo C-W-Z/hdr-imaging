@@ -4,17 +4,17 @@ FILE=hdr.hdr  # HDR filename
 # Tonemapping algorithms and arguments
 
 
-# Algorithm      output-directory     gamma  brightness  normalize
-gamma_intensity  gamma_intensity.png  2.2    5           ALL
+# Algorithm      gamma  brightness  normalize
+gamma_intensity  2.2    5           ALL
 
 
-# Algorithm  output-directory  gamma  brightness  normalize
-gamma_color  gamma_color.png   2.2    1.5         ALL
+# Algorithm  gamma  brightness  normalize
+gamma_color  2.2    1.5         ALL
 
 
-# Algorithm  output-directory  a  Lwhite  delta  normalize  save-gray-image
-global       global.png        1  50      1      ALL        True
+# Algorithm  a  Lwhite  delta  normalize  save-gray-image
+global       1  50      1      ALL        True
 
 
-# Algorithm  output-directory  sigma_range  contrast  a  Lwhite  delta  normalize  save-filtered-images
-bilateral    bilateral.png     1            4.5       4  25      1      ALL        True
+# Algorithm  sigma_range  contrast  a  Lwhite  delta  normalize  save-filtered-images
+bilateral    1            4.5       4  25      1      ALL        True

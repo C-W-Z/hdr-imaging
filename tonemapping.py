@@ -1,3 +1,5 @@
+import argparse
+import os
 import cv2
 import numpy as np
 from enum import IntEnum
@@ -7,6 +9,8 @@ class NormalizeType(IntEnum):
     NONE = 0
     ALL = 1
     CHANNEL = 2
+    def __str__(self):
+        return self.name.capitalize()
 
 def to_gray(hdr:np.ndarray):
     if hdr.ndim == 3:
@@ -17,17 +21,15 @@ def to_gray(hdr:np.ndarray):
         # return 0.299 * hdr[:,:,2] + 0.587 * hdr[:,:,1] + 0.114 * hdr[:,:,0] + 1e-6
     return hdr
 
-def normalize(img):
-    return (img - np.min(img)) / (np.max(img) - np.min(img))
+def cv2_drago(hdr:np.ndarray[np.float32, 3], output_dir:str, gamma:float, saturation:float, bias:float, brightness:float):
 
-def cv2_drago(hdr:np.ndarray[np.float32, 3], multi:float, gamma:float, saturation:float, filename:str):
+    print(f"cv2 Drago tonemapping ...\ngamma = {gamma}\nsaturation = {saturation}\nbias = {bias}\nbrightness = {brightness}")
 
-    print("cv2 Drago tonemapping ...")
-
-    tonemap = cv2.createTonemapDrago(gamma, saturation)
+    tonemap = cv2.createTonemapDrago(gamma, saturation, bias)
     ldr = tonemap.process(hdr)
-    ldr = multi * ldr
-    cv2.imwrite(f"{filename}.png", ldr * 255)
+    ldr *= brightness * 255
+    filename = f"cv2_drago_{gamma}_{saturation}_{bias}_{brightness}.png"
+    cv2.imwrite(os.path.join(output_dir, filename), ldr)
 
 def aces(color:float):
     A = 2.51
@@ -38,10 +40,14 @@ def aces(color:float):
     return (color * (A * color + B)) / (color * (C * color + D) + E)
 
 def single_global(Lworld:np.ndarray[np.float32, 2], a:float, Lwhite:float, delta:float=1e-6) -> np.ndarray[np.float32, 2]:
+    """
+    Photographic global mapping for single channel
+    """
+
     H, W = Lworld.shape
     N = H * W
     l_min = np.min(Lworld)
-    print(f"l_min={l_min}")
+    # print(f"l_min={l_min}")
     if l_min < 0:
         delta += np.abs(l_min)
     average_Lworld = np.exp(np.sum(np.log(delta + Lworld)) / N)
@@ -49,7 +55,9 @@ def single_global(Lworld:np.ndarray[np.float32, 2], a:float, Lwhite:float, delta
     Ld = Lm * (1 + Lm / np.square(Lwhite)) / (1 + Lm)
     return Ld
 
-def gamma_intensity(hdr:np.ndarray[np.float32, 3], gamma:float, brightness:float, normalize:NormalizeType):
+def gamma_intensity(hdr:np.ndarray[np.float32, 3], output_dir:str, gamma:float, brightness:float, normalize:NormalizeType=NormalizeType.ALL):
+    print(f"gamma intensity tonemapping ...\ngamma = {gamma}\nbrightness = {brightness}\nnormalize = {normalize}")
+
     Lworld = to_gray(hdr)
     # print(np.max(Lworld), np.mean(Lworld), np.min(Lworld))
     Ld = np.power(Lworld, 1/gamma)
@@ -63,9 +71,16 @@ def gamma_intensity(hdr:np.ndarray[np.float32, 3], gamma:float, brightness:float
     if normalize == NormalizeType.ALL:
         ldr = cv2.normalize(ldr, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
 
-    return ldr * brightness * 255
+    ldr *= brightness * 255
 
-def gamma_color(hdr:np.ndarray[np.float32, 3], gamma:float, brightness:float, normalize:NormalizeType):
+    filename = f"gamma_intensity_{gamma}_{brightness}_{normalize}.png"
+    cv2.imwrite(os.path.join(output_dir, filename), ldr)
+
+    return ldr
+
+def gamma_color(hdr:np.ndarray[np.float32, 3], output_dir:str, gamma:float, brightness:float, normalize:NormalizeType=NormalizeType.ALL):
+    print(f"gamma color tonemapping ...\ngamma = {gamma}\nbrightness = {brightness}\nnormalize = {normalize}")
+
     Lworld = to_gray(hdr)
     # print(np.max(Lworld), np.mean(Lworld), np.min(Lworld))
     L = Lworld / (1 / brightness + Lworld)
@@ -79,17 +94,22 @@ def gamma_color(hdr:np.ndarray[np.float32, 3], gamma:float, brightness:float, no
     if normalize == NormalizeType.ALL:
         ldr = cv2.normalize(ldr, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
 
-    # cv2.imwrite(f"{filename}.png", ldr * brightness * 255)
-    return ldr * brightness * 255
+    ldr *= brightness * 255
 
-def photographic_global(hdr:np.ndarray[np.float32, 3], a:float, Lwhite:float, delta:float, normalize:NormalizeType):
+    filename = f"gamma_color_{gamma}_{brightness}_{normalize}.png"
+    cv2.imwrite(os.path.join(output_dir, filename), ldr)
 
-    print("phtographic global tonemapping ...")
+    return ldr
+
+def photographic_global(hdr:np.ndarray[np.float32, 3], output_dir:str, a:float, Lwhite:float, delta:float, normalize:NormalizeType=NormalizeType.ALL, save_gray:bool=False):
+    print(f"phtographic global tonemapping ...\na = {a}\nLwhite = {Lwhite}\ndelta = {delta}\nnormalize = {normalize}")
 
     Lworld = to_gray(hdr)
     Ld = single_global(Lworld, a, Lwhite, delta)
 
-    # cv2.imwrite(f"{filename}_gray.png", Ld * 255)
+    if save_gray:
+        filename = f"global_gray_{a}_{Lwhite}_{delta}_{normalize}.png"
+        cv2.imwrite(os.path.join(output_dir, filename), Ld * 255)
 
     ldr = np.zeros_like(hdr, dtype=np.uint8)
     for i in range(3):
@@ -100,10 +120,13 @@ def photographic_global(hdr:np.ndarray[np.float32, 3], a:float, Lwhite:float, de
     if normalize == NormalizeType.ALL:
         ldr = cv2.normalize(ldr, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
 
-    # cv2.imwrite(f"{filename}.png", ldr)
+    filename = f"global_{a}_{Lwhite}_{delta}_{normalize}.png"
+    cv2.imwrite(os.path.join(output_dir, filename), ldr)
+
     return ldr
 
-def bilateral_filtering(hdr:np.ndarray[np.float32, 3], sigma_range:float, contrast:float, a:float, Lwhite:float, delta:float, filename:str):
+def bilateral_filtering(hdr:np.ndarray[np.float32, 3], output_dir:str, sigma_range:float, contrast:float, a:float, Lwhite:float, delta:float, normalize:NormalizeType=NormalizeType.ALL, save_filtered:bool=False):
+    print(f"bilateral filtering tonemapping ...\nsigma_range = {sigma_range}\ncontrast = {contrast}\na = {a}\nLwhite = {Lwhite}\ndelta = {delta}\nnormalize = {normalize}")
 
     Lworld = to_gray(hdr)
     H, W = Lworld.shape
@@ -116,17 +139,23 @@ def bilateral_filtering(hdr:np.ndarray[np.float32, 3], sigma_range:float, contra
 
     factor = contrast / (np.max(gray_img) - np.min(gray_img))
     log_abs_scale = np.max(gray_img) * factor
-    print(factor, log_abs_scale)
+    # print(factor, log_abs_scale)
 
     new_gray = low * factor + high - log_abs_scale
 
-    low = np.exp(low)
-    high = np.exp(high)
     Ld = np.exp(new_gray)
 
-    cv2.imwrite("bilateral_low.png", single_global(low, a, Lwhite, delta) * 255)
-    cv2.imwrite("bilateral_high.png", single_global(high, a, Lwhite, delta) * 255)
-    cv2.imwrite("bilateral_gray.png", single_global(Ld, a, Lwhite, delta) * 255)
+    if save_filtered:
+        low = np.exp(low)
+        filename = f"bilateral_low_{sigma_range}_{contrast}_{a}_{Lwhite}_{delta}_{normalize}.png"
+        cv2.imwrite(os.path.join(output_dir, filename), single_global(low, a, Lwhite, delta) * 255)
+
+        high = np.exp(high)
+        filename = f"bilateral_high_{sigma_range}_{contrast}_{a}_{Lwhite}_{delta}_{normalize}.png"
+        cv2.imwrite(os.path.join(output_dir, filename), single_global(high, a, Lwhite, delta) * 255)
+
+        filename = f"bilateral_gray_{sigma_range}_{contrast}_{a}_{Lwhite}_{delta}_{normalize}.png"
+        cv2.imwrite(os.path.join(output_dir, filename), single_global(Ld, a, Lwhite, delta) * 255)
 
     ldr = np.zeros_like(hdr, dtype=np.uint8)
     for i in range(3):
@@ -138,28 +167,48 @@ def bilateral_filtering(hdr:np.ndarray[np.float32, 3], sigma_range:float, contra
     if normalize == NormalizeType.ALL:
         ldr = cv2.normalize(ldr, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
 
-    # cv2.imwrite(f"{filename}.png", ldr)
+    filename = f"bilateral_{sigma_range}_{contrast}_{a}_{Lwhite}_{delta}_{normalize}.png"
+    cv2.imwrite(os.path.join(output_dir, filename), ldr)
+
     return ldr
 
-def main(input_dir:str):
+def main(input_dir:str, output_dir:str):
     hdr, arg_list = utils.read_tonemap_settings(input_dir)
-    for algorithm, output_dir, *args in arg_list:
+    for algorithm, *args in arg_list:
+        print("")
         if algorithm == 'gamma_intensity':
             gamma, brightness, normalize = args
-            gamma_intensity(hdr, gamma, brightness, normalize)
+            gamma_intensity(hdr, output_dir, gamma, brightness, normalize)
+        elif algorithm == 'gamma_color':
+            gamma, brightness, normalize = args
+            gamma_color(hdr, output_dir, gamma, brightness, normalize)
+        elif algorithm == 'global':
+            a, Lwhite, delta, normalize, save_gray = args
+            photographic_global(hdr, output_dir, a, Lwhite, delta, normalize, save_gray)
+        elif algorithm == 'bilateral':
+            sigma_range, contrast, a, Lwhite, delta, normalize, save_filtered = args
+            bilateral_filtering(hdr, output_dir, sigma_range, contrast, a, Lwhite, delta, normalize, save_filtered)
+        else:
+            print(f"Error: Algorithm name {algorithm} not found")
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Read HDR image & arguments from <input_directory>/tonemap.txt & output the LDR images in <output_directory>\n")
+    parser.add_argument("input_directory", type=str, help="Input directory path, must contain file 'tonemap.txt'")
+    parser.add_argument("output_directory", type=str, help="Output directory path")
 
-    hdr_image, arg_list = utils.read_tonemap_settings('img/test1')
-    print(hdr_image.shape, arg_list)
+    usage = parser.format_usage()
+    usage = "tonemapping.py [-h] <input_directory> <output_directory>\nExample: python tonemapping.py img/test1 img/test1\n"
+    parser.usage = usage
 
-    # filename = 'img/test1/hdr.hdr'
-    # hdr_image = utils.read_hdr_image(filename)
-    # npaces = np.vectorize(aces)
-    # ldr = npaces(hdr_image)
-    # cv2.imwrite("ldr.png", ldr * 255)
-    # cv2_drago(hdr_image, 2.8, 1, 0.7, 'ldr')
-    # gamma_mapping(hdr_image, 2.2, 5, 'ldr')
-    # gamma_map_color(hdr_image, 2.2, 1.2, 'ldr')
-    # photographic_global(hdr_image, 1, 50, 0.7, "ldr")
-    # bilateral_filtering(hdr_image, 1, 4.5, 4, 25, 0.5, 'ldr')
+    args = parser.parse_args()
+
+    if not os.path.isdir(args.input_directory):
+        print(f"error: {args.input_directory} is not a directory\n")
+        parser.print_help()
+        exit()
+    if not os.path.isdir(args.output_directory):
+        print(f"error: {args.output_directory} is not a directory\n")
+        parser.print_help()
+        exit()
+
+    main(args.input_directory, args.output_directory)

@@ -150,42 +150,45 @@ def process_normalize_type(normalize:str, line:int):
         exit()
 
 def read_tonemap_argument(args:list, line:int) -> list:
-    if len(args) < 2:
+    if len(args) < 1:
         print(f"Error: Not enough arguments in tonemap.txt, Line {line+1}")
         exit()
 
     algorithm = args[0]
-    output_dir = args[1]
 
     if algorithm == 'gamma_intensity' or algorithm == 'gamma_color':
-        if len(args) != 5:
-            print(f"Error: Need 5 arguments, but {len(args)} in tonemap.txt, Line {line+1}")
+        if len(args) != 4:
+            print(f"Error: Need 4 arguments, but {len(args)} in tonemap.txt, Line {line+1}")
             exit()
-        gamma = to_float(args[2], line)
-        brightness = to_float(args[3], line)
-        normalize = process_normalize_type(args[4], line)
-        return [algorithm, output_dir, gamma, brightness, normalize]
+        gamma = to_float(args[1], line)
+        brightness = to_float(args[2], line)
+        normalize = process_normalize_type(args[3], line)
+        return [algorithm, gamma, brightness, normalize]
+
     elif algorithm == 'global':
         if len(args) != 6:
             print(f"Error: Need 6 arguments, but {len(args)} in tonemap.txt, Line {line+1}")
             exit()
-        a = to_float(args[2], line)
-        Lwhite = to_float(args[3], line)
-        delta = to_float(args[4], line)
-        normalize = process_normalize_type(args[5], line)
-        return [algorithm, output_dir, a, Lwhite, delta, normalize]
+        a = to_float(args[1], line)
+        Lwhite = to_float(args[2], line)
+        delta = to_float(args[3], line)
+        normalize = process_normalize_type(args[4], line)
+        save_gray = to_bool(args[5], line)
+        return [algorithm, a, Lwhite, delta, normalize, save_gray]
+
     elif algorithm == 'bilateral':
-        if len(args) != 9:
-            print(f"Error: Need 9 arguments, but {len(args)} in tonemap.txt, Line {line+1}")
+        if len(args) != 8:
+            print(f"Error: Need 8 arguments, but {len(args)} in tonemap.txt, Line {line+1}")
             exit()
-        sigma_range = to_float(args[2], line)
-        contrast = to_float(args[3], line)
-        a = to_float(args[4], line)
-        Lwhite = to_float(args[5], line)
-        delta = to_float(args[6], line)
-        normalize = process_normalize_type(args[7], line)
-        save = to_bool(args[8], line)
-        return [algorithm, output_dir, sigma_range, contrast, a, Lwhite, delta, normalize, save]
+        sigma_range = to_float(args[1], line)
+        contrast = to_float(args[2], line)
+        a = to_float(args[3], line)
+        Lwhite = to_float(args[4], line)
+        delta = to_float(args[5], line)
+        normalize = process_normalize_type(args[6], line)
+        save_filtered = to_bool(args[7], line)
+        return [algorithm, sigma_range, contrast, a, Lwhite, delta, normalize, save_filtered]
+
     else:
         print(f"Error: Algorithm name {algorithm} not found in tonemap.txt, Line {line+1}")
         exit()
