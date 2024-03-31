@@ -186,11 +186,11 @@ def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np
 
     return hdr_image
 
-def main(input_dir:str, output_directory:str, save_r:bool):
+def main(input_dir:str, output_directory:str, save:bool):
     images, lnt, l, alignType, std_img_idx, depth = utils.read_ldr_images(input_dir)
     images = align.align(images, alignType, std_img_idx, depth)
     channels = utils.ldr_to_channels(images)
-    if save_r:
+    if save:
         hdr_image = hdr_reconstruction(channels, lnt, l, output_directory)
     else:
         hdr_image = hdr_reconstruction(channels, lnt, l, None)

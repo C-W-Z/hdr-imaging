@@ -1,6 +1,8 @@
-#ALIGN=OUR
-#STD=5
-# Filename                         exposure
+ALIGN=NONE # These images are already aligned
+
+LAMBDA=20  # The lambda (smoothness) used in solving response curve
+
+# LDR filenames                    exposure
 HDRI_Sample_Scene_Window_-_01.jpg  0.015625
 HDRI_Sample_Scene_Window_-_02.jpg  0.03125
 HDRI_Sample_Scene_Window_-_03.jpg  0.0625

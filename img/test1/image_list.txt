@@ -1,10 +1,8 @@
-# These images are already aligned
-ALIGN=NONE
+ALIGN=NONE # These images are already aligned
 
-# The lambda (smoothness) used in solving response curve
-LAMBDA=30
+LAMBDA=30  # The lambda (smoothness) used in solving response curve
 
-# Filename        exposure
+# LDR filenames   exposure
 memorial0061.png  32
 memorial0062.png  16
 memorial0063.png  8

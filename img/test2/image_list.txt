@@ -1,16 +1,13 @@
-# Align images using our implementation
-ALIGN=OUR
 
-# Standard images index for MTB alignment
-STD=2
+ALIGN=OUR  # Align images using our implementation
 
-# Recusion depth in MTB algorithm (minimum is 0)
-DEPTH=3
+STD=2      # Standard images index for MTB alignment
 
-# The lambda (smoothness) used in solving response curve
-LAMBDA=25
+DEPTH=3    # Recusion depth in MTB algorithm (minimum is 0)
 
-# Filename                      exposure
+LAMBDA=25  # The lambda (smoothness) used in solving response curve
+
+# LDR filenames                 exposure
 StLouisArchMultExpEV-4.72.jpeg  0.037944
 StLouisArchMultExpEV-1.82.jpeg  0.283221
 StLouisArchMultExpEV+1.51.jpeg  2.848100
