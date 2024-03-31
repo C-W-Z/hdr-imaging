@@ -1,9 +1,10 @@
+import argparse
+import os
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import math
-import utils
-import align
+import utils, align
 
 def weight_function():
     return np.array([z+1 if z < 128 else 256-z for z in range(256)], dtype=np.float32)
@@ -125,7 +126,7 @@ def construct_radiance_map(images:np.ndarray[np.uint8, 3], g:np.ndarray[np.float
     lnE = np.average(g_lnt_map, axis=0, weights=w_map)
     return lnE
 
-def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np.float32], l:int, save=False) -> np.ndarray[np.float32, 3]:
+def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np.float32], l:int, save_dir:str=None) -> np.ndarray[np.float32, 3]:
     """
     Read the image_list.txt and read all images included in the list. Then reconstruct those LDR images into a HDR image.
 
@@ -142,15 +143,17 @@ def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np
 
     H, W = channels[0][0].shape
     padding = math.ceil(min(H, W) * 0.1)
-    print(f"padding = {padding}")
+    print(f"padding = {padding} pixels")
     pixel_positions = pick_sample_pixels(H, W, padding=padding)
     w = weight_function()
 
-    if save:
+    if save_dir != None:
         plt.figure(figsize=(10, 10))
         color = ['bx','gx','rx']
 
     hdr_image = np.zeros((H, W, 3), dtype=np.float32)
+
+    print(f"lamda = {l}")
 
     # channel 0,1,2 = B,G,R
     for i, channel in enumerate(channels):
@@ -160,31 +163,58 @@ def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np
         # Construct radiance map
         lnE = construct_radiance_map(channel, g, lnt, w)
         hdr_image[..., i] = np.exp(lnE)
-        if save:
+        if save_dir != None:
             plt.plot(g, range(256), color[i])
 
-    if save:
+    if save_dir != None:
         # Show response curve
-        print("saving response curve ...")
+        r_path = os.path.join(save_dir, 'response-curve.png')
+        print(f"saving response curve in {r_path}")
 
         plt.ylabel('pixel value Z')
         plt.xlabel('log exposure X')
-        plt.savefig('response-curve.png')
+        plt.savefig(r_path)
 
-        # Display Radiance map with pseudo-color image (log value)
-        print("saving radiance map ...")
+        # Display radiance map with pseudo-color image (log value)
+        r_path = os.path.join(save_dir, 'radiance-map.png')
+        print(f"saving radiance map in {r_path}")
 
         plt.figure(figsize=(12,8))
         plt.imshow(np.log(cv2.cvtColor(hdr_image, cv2.COLOR_BGR2GRAY)), cmap='jet')
         plt.colorbar()
-        plt.savefig('radiance-map.png')
+        plt.savefig(r_path)
 
     return hdr_image
 
-if __name__ == '__main__':
-
-    images, lnt, alignType, std_img_idx = utils.read_ldr_images('img/test3')
-    images = align.align(images, alignType, std_img_idx, 5)
+def main(input_dir:str, output_directory:str, save_r:bool):
+    images, lnt, l, alignType, std_img_idx, depth = utils.read_ldr_images(input_dir)
+    images = align.align(images, alignType, std_img_idx, depth)
     channels = utils.ldr_to_channels(images)
-    hdr_image = hdr_reconstruction(channels, lnt, 20, True)
-    utils.save_hdr_image(hdr_image, 'hdr3')
+    if save_r:
+        hdr_image = hdr_reconstruction(channels, lnt, l, output_directory)
+    else:
+        hdr_image = hdr_reconstruction(channels, lnt, l, None)
+    utils.save_hdr_image(hdr_image, os.path.join(output_directory, 'hdr.hdr'))
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Read LDR images from <input_directory>/image_list.txt & output the HDR image 'hdr.hdr' in <output_directory>\n")
+    parser.add_argument("input_directory", type=str, help="Input directory path, must contain file 'image_list.txt'")
+    parser.add_argument("output_directory", type=str, help="Output directory path")
+    parser.add_argument("-s", action="store_true", help="Output response curve 'response-curve.png' & radiance map 'radiance-map.png' in <output_directory>")
+
+    usage = parser.format_usage()
+    usage = "hdr.py [-h] [-s] <input_directory> <output_directory>\nExample: python hdr.py img/test1 img/test1\n"
+    parser.usage = usage
+
+    args = parser.parse_args()
+
+    if not os.path.isdir(args.input_directory):
+        print(f"error: {args.input_directory} is not a directory\n")
+        parser.print_help()
+        exit()
+    if not os.path.isdir(args.output_directory):
+        print(f"error: {args.output_directory} is not a directory\n")
+        parser.print_help()
+        exit()
+
+    main(args.input_directory, args.output_directory, args.s)

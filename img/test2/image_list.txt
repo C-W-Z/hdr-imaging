@@ -1,11 +1,17 @@
-# Number of images
-# 4
-# Need alignment using our implementation
+# Align images using our implementation
 ALIGN=OUR
-# Standard images index = 2
+
+# Standard images index for MTB alignment
 STD=2
-# Filename                     exposure
-StLouisArchMultExpEV-4.72.jpeg 0.037944
-StLouisArchMultExpEV-1.82.jpeg 0.283221
-StLouisArchMultExpEV+1.51.jpeg 2.848100
-StLouisArchMultExpEV+4.09.jpeg 17.02992
+
+# Recusion depth in MTB algorithm (minimum is 0)
+DEPTH=3
+
+# The lambda (smoothness) used in solving response curve
+LAMBDA=25
+
+# Filename                      exposure
+StLouisArchMultExpEV-4.72.jpeg  0.037944
+StLouisArchMultExpEV-1.82.jpeg  0.283221
+StLouisArchMultExpEV+1.51.jpeg  2.848100
+StLouisArchMultExpEV+4.09.jpeg  17.02992

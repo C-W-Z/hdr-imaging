@@ -19,39 +19,52 @@ def read_ldr_images(source_dir:str) -> tuple[list[cv2.Mat | np.ndarray[np.uint8,
 
     filepaths = []
     exposure_times = []
+    l = 20
     alignType = AlignType.NONE
     std_img_idx = -1
+    depth = 5
 
-    with open(os.path.join(source_dir, 'image_list.txt'), 'r') as img_list:
-        for line in img_list:
-            line = line.strip()
-            if len(line) == 0 or line.startswith('#'):
-                continue
-            if line.startswith('ALIGN'):
-                line.replace(' ', '')
-                t = line.split('=')[1]
-                if t == 1 or t == 'OUR':
-                    alignType = AlignType.OUR
-                elif t == 2 or t == 'CV2':
-                    alignType = AlignType.CV2
-                elif t != 0 and t != 'NONE':
-                    print(f"error: {line}")
-            elif line.startswith('STD'):
-                line.replace(' ', '')
-                std_img_idx = int(line.split('=')[1])
-            else:
-                filename, shutter_speed, *_ = line.split()
-                filepaths.append(os.path.join(source_dir, filename))
-                exposure_times.append(shutter_speed)
+    try:
+        with open(os.path.join(source_dir, 'image_list.txt'), 'r') as img_list:
+            for line in img_list:
+                line = line.strip()
+                if len(line) == 0 or line.startswith('#'):
+                    continue
+                if line.startswith('ALIGN'):
+                    line.replace(' ', '')
+                    t = line.split('=')[1]
+                    if t == 1 or t == 'OUR':
+                        alignType = AlignType.OUR
+                    elif t == 2 or t == 'CV2':
+                        alignType = AlignType.CV2
+                    elif t != 0 and t != 'NONE':
+                        print(f"error: {line}")
+                elif line.startswith('STD'):
+                    line.replace(' ', '')
+                    std_img_idx = int(line.split('=')[1])
+                elif line.startswith('DEPTH'):
+                    line.replace(' ', '')
+                    depth = float(line.split('=')[1])
+                elif line.startswith('LAMBDA'):
+                    line.replace(' ', '')
+                    l = float(line.split('=')[1])
+                else:
+                    filename, shutter_speed, *_ = line.split()
+                    filepaths.append(os.path.join(source_dir, filename))
+                    exposure_times.append(shutter_speed)
 
-    print(f"reading files: {filepaths}")
+        print(f"reading files: {filepaths}")
 
-    images = [cv2.imread(path, cv2.IMREAD_COLOR) for path in filepaths]
-    assert(len(images) == len(exposure_times))
+        images = [cv2.imread(path, cv2.IMREAD_COLOR) for path in filepaths]
+        assert(len(images) == len(exposure_times))
 
-    lnt = np.log(np.array(exposure_times, dtype=np.float32))
+        lnt = np.log(np.array(exposure_times, dtype=np.float32))
 
-    return (images, lnt, alignType, std_img_idx)
+        return (images, lnt, l, alignType, std_img_idx, depth)
+
+    except FileNotFoundError as e:
+        print("FileNotFoundError:", e)
+        exit()
 
 def ldr_to_channels(images:list[cv2.Mat | np.ndarray[np.uint8, 3]]) -> list[np.ndarray[np.uint8, 3]]:
     channels = [None] * 3
@@ -84,6 +97,9 @@ def save_hdr_image(hdr_image:np.ndarray[np.float32, 3], filename:str) -> None:
     filename : the name of the .hdr file to save
     """
 
-    print("saving HDR image ...")
+    print(f"saving HDR image in {filename}")
 
-    cv2.imwrite(f'{filename}.hdr', hdr_image)
+    if filename.endswith('.hdr'):
+        cv2.imwrite(filename, hdr_image)
+    else:
+        cv2.imwrite(f"{filename}.hdr", hdr_image)
