@@ -33,14 +33,6 @@ def cv2_drago(hdr:np.ndarray[np.float32, 3], output_dir:str, gamma:float, satura
     print(f"saving LDR image to {filename}")
     cv2.imwrite(filename, ldr)
 
-def aces(color:float):
-    A = 2.51
-    B = 0.03
-    C = 2.43
-    D = 0.59
-    E = 0.14
-    return (color * (A * color + B)) / (color * (C * color + D) + E)
-
 def single_global(Lworld:np.ndarray[np.float32, 2], a:float, Lwhite:float, delta:float=1e-6) -> np.ndarray[np.float32, 2]:
     """
     Photographic global mapping for single channel
@@ -194,7 +186,10 @@ def main(input_file:str, output_dir:str):
     hdr, arg_list = utils.read_tonemap_settings(input_file)
     for algorithm, *args in arg_list:
         print("")
-        if algorithm == 'gamma_intensity':
+        if algorithm == 'cv2_drago':
+            gamma, saturation, bias, brightness = args
+            cv2_drago(hdr, output_dir, gamma, saturation, bias, brightness)
+        elif algorithm == 'gamma_intensity':
             gamma, brightness, normalize = args
             gamma_intensity(hdr, output_dir, gamma, brightness, normalize)
         elif algorithm == 'gamma_color':

@@ -9,9 +9,11 @@ def perror(message:str):
     exit()
 
 def to_bool(value:str, file:str, line:int):
-    try:
-        return bool(value)
-    except ValueError:
+    if value.capitalize() == 'True' or value == '1':
+        return True
+    elif value.capitalize() == 'False' or value == '0':
+        return False
+    else:
         perror(f"Error in {file}, line {line+1}: {value} is not a valid bool value")
 
 def to_int(value:str, file:str, line:int):
@@ -174,7 +176,16 @@ def read_tonemap_arguments(args:list, file:str, line:int) -> list:
 
     algorithm = args[0]
 
-    if algorithm == 'gamma_intensity' or algorithm == 'gamma_color':
+    if algorithm == 'cv2_drago':
+        if len(args) != 5:
+            perror(f"Error in {file}, line {line+1}: Need 5 arguments, but got {len(args)}")
+        gamma = to_float(args[1], file, line)
+        saturation = to_float(args[2], file, line)
+        bias = to_float(args[3], file, line)
+        brightness = to_float(args[4], file, line)
+        return [algorithm, gamma, saturation, bias, brightness]
+
+    elif algorithm == 'gamma_intensity' or algorithm == 'gamma_color':
         if len(args) != 4:
             perror(f"Error in {file}, line {line+1}: Need 4 arguments, but got {len(args)}")
         gamma = to_float(args[1], file, line)
@@ -216,7 +227,7 @@ def read_tonemap_settings(setting_file:str) -> tuple[np.ndarray[np.float32, 3],l
     try:
         with open(setting_file, 'r') as setting:
             for i, line in enumerate(setting):
-                line = line.split('#')[0].strip()
+                line = line.split('#')[0].strip() # remove the comments starts with '#'
                 if len(line) == 0:
                     continue
                 if line.startswith('FILE'):
