@@ -1,4 +1,11 @@
-ALIGN=NONE # These images are already aligned
+# These images are already aligned
+ALIGN=NONE
+
+# ALIGN=OUR
+# STD=5           # Standard image index for MTB alignment
+# DEPTH=3         # Recusion depth in MTB algorithm (minimum is 0)
+# THRESHOLD=MEAN  # Threshold type in MTB algorithm
+# GRAYRANGE=4     # the range of intensities to ignore around threshold
 
 LAMBDA=30  # The lambda (smoothness) used in solving response curve
 

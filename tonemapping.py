@@ -192,7 +192,7 @@ def main(input_dir:str, output_dir:str):
             print(f"Error: Algorithm name {algorithm} not found")
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Read HDR image & arguments from <input_directory>/tonemap.txt & output the LDR images in <output_directory>\n")
+    parser = argparse.ArgumentParser(description="Read HDR image & arguments from <input_directory>/tonemap.txt & output the LDR images to <output_directory>\n")
     parser.add_argument("input_directory", type=str, help="Input directory path, must contain file 'tonemap.txt'")
     parser.add_argument("output_directory", type=str, help="Output directory path")
 

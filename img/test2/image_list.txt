@@ -1,14 +1,13 @@
+ALIGN=OUR      # Align images using our implementation
+STD=2          # Standard image index for MTB alignment
+DEPTH=3        # Recusion depth in MTB algorithm (minimum is 0)
+THRESHOLD=MEAN # Threshold type in MTB algorithm
+GRAYRANGE=5    # the range of intensities to ignore around threshold
 
-ALIGN=OUR  # Align images using our implementation
-
-STD=2      # Standard images index for MTB alignment
-
-DEPTH=3    # Recusion depth in MTB algorithm (minimum is 0)
-
-LAMBDA=25  # The lambda (smoothness) used in solving response curve
+LAMBDA=25      # The lambda (smoothness) used in solving response curve
 
 # LDR filenames                 exposure
 StLouisArchMultExpEV-4.72.jpeg  0.037944
 StLouisArchMultExpEV-1.82.jpeg  0.283221
-StLouisArchMultExpEV+1.51.jpeg  2.848100
+StLouisArchMultExpEV+1.51.jpeg  2.848100  # standard image
 StLouisArchMultExpEV+4.09.jpeg  17.02992

@@ -139,7 +139,7 @@ def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np
     hdr_image[x,y,i] : the HDR value (float32) of pixel location (x, y) in the ith channel
     """
 
-    print("start HDR reconstruction ...")
+    print("start Debevec HDR reconstruction ...")
 
     H, W = channels[0][0].shape
     padding = math.ceil(min(H, W) * 0.1)
@@ -169,7 +169,7 @@ def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np
     if save_dir != None:
         # Show response curve
         r_path = os.path.join(save_dir, 'response-curve.png')
-        print(f"saving response curve in {r_path}")
+        print(f"saving response curve to {r_path}")
 
         plt.ylabel('pixel value Z')
         plt.xlabel('log exposure X')
@@ -177,7 +177,7 @@ def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np
 
         # Display radiance map with pseudo-color image (log value)
         r_path = os.path.join(save_dir, 'radiance-map.png')
-        print(f"saving radiance map in {r_path}")
+        print(f"saving radiance map to {r_path}")
 
         plt.figure(figsize=(12,8))
         plt.imshow(np.log(cv2.cvtColor(hdr_image, cv2.COLOR_BGR2GRAY)), cmap='jet')
@@ -187,8 +187,8 @@ def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np
     return hdr_image
 
 def main(input_dir:str, output_directory:str, save:bool):
-    images, lnt, l, alignType, std_img_idx, depth = utils.read_ldr_images(input_dir)
-    images = align.align(images, alignType, std_img_idx, depth)
+    images, lnt, l, alignType, std_img_idx, depth, threshold_type, gray_range = utils.read_ldr_images(input_dir)
+    images = align.align(images, alignType, std_img_idx, depth, threshold_type, gray_range)
     channels = utils.ldr_to_channels(images)
     if save:
         hdr_image = hdr_reconstruction(channels, lnt, l, output_directory)
@@ -197,7 +197,7 @@ def main(input_dir:str, output_directory:str, save:bool):
     utils.save_hdr_image(hdr_image, os.path.join(output_directory, 'hdr.hdr'))
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Read LDR images from <input_directory>/image_list.txt & output the HDR image 'hdr.hdr' in <output_directory>\n")
+    parser = argparse.ArgumentParser(description="Read LDR images from <input_directory>/image_list.txt & output the HDR image 'hdr.hdr' to <output_directory>\n")
     parser.add_argument("input_directory", type=str, help="Input directory path, must contain file 'image_list.txt'")
     parser.add_argument("output_directory", type=str, help="Output directory path")
     parser.add_argument("-s", action="store_true", help="Output response curve 'response-curve.png' & radiance map 'radiance-map.png' in <output_directory>")
