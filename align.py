@@ -149,12 +149,7 @@ def align(imgs:list[np.ndarray[np.uint8, 3]], alignType:AlignType, std_img_idx:i
 
 def main(input_file:str, output_dir:str, save_bitmaps:bool, save_aligned:bool):
     imgs, _, _, alignType, std_img_idx, depth, threshold_type, gray_range = utils.read_ldr_images(input_file)
-    if save_bitmaps and not save_aligned:
-        threshold_bitmaps(imgs, threshold_type, gray_range, output_dir)
-    elif save_bitmaps or save_aligned:
-        align(imgs, alignType, std_img_idx, depth, threshold_type, gray_range, output_dir, save_bitmaps, save_aligned)
-    else:
-        print("No file saved")
+    align(imgs, alignType, std_img_idx, depth, threshold_type, gray_range, output_dir, save_bitmaps, save_aligned)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Read LDR image & arguments from information in <input_file> & output bitmaps or aligned images to <output_directory>\n")
