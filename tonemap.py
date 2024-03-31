@@ -135,7 +135,8 @@ def bilateral_filtering(hdr:np.ndarray[np.float32, 3], output_dir:str, sigma_ran
 
     gray_img = np.log(Lworld)
 
-    low = cv2.bilateralFilter(gray_img, 10, sigma_range, 0.02 * max(H, W))
+    d = np.clip(0.01 * max(H, W), 5, 11)
+    low = cv2.bilateralFilter(gray_img, d, sigma_range, 0.02 * max(H, W))
     high = gray_img - low
 
     factor = contrast / (np.max(gray_img) - np.min(gray_img))

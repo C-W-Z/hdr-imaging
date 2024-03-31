@@ -31,7 +31,7 @@ global       0.6  50      1e-6   ALL        True
 global       0.6  50      1e-6   CHANNEL        False
 
 
-# Algorithm  sigma_range  contrast  a    Lwhite  delta  normalize  save-filtered-images
+# Algorithm  sigma_color  contrast  a    Lwhite  delta  normalize  save-filtered-images
 bilateral    1            6         1    50      0.5    ALL        True
 bilateral    0.5          6         1    50      0.5    ALL        True
 bilateral    2            6         1    50      0.5    ALL        True
