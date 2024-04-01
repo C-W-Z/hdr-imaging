@@ -207,14 +207,8 @@ def main(input_file:str, output_dir:str):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Read HDR image & arguments from information in <input_file> & output the LDR images to <output_directory>\n")
-    parser.add_argument("input_file", type=str, help="Input file (.txt) path")
-    parser.add_argument("output_directory", type=str, help="Output directory path")
-
-    # usage = parser.format_usage()
-    parser.usage = "tonemap.py [-h] <input_file> <output_directory>\n"
-
+    parser.add_argument("input_file", type=str, metavar="<input_file>", help="Input file (.txt) path")
+    parser.add_argument("output_directory", type=str, metavar="<output_directory>", help="Output directory path")
     args = parser.parse_args()
-
     utils.check_and_make_dir(args.output_directory)
-
     main(args.input_file, args.output_directory)

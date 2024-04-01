@@ -195,15 +195,9 @@ def main(input_file:str, output_directory:str, save:bool):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Read LDR images & arguments from information in <input_file> & output the HDR image 'hdr.hdr' to <output_directory>\n")
-    parser.add_argument("input_file", type=str, help="Input file (.txt) path")
-    parser.add_argument("output_directory", type=str, help="Output directory path")
+    parser.add_argument("input_file", type=str, metavar="<input_file>", help="Input file (.txt) path")
+    parser.add_argument("output_directory", type=str, metavar="<output_directory>", help="Output directory path")
     parser.add_argument("-s", action="store_true", help="Output response curve 'response-curve.png' & radiance map 'radiance-map.png' in <output_directory>")
-
-    # usage = parser.format_usage()
-    parser.usage = "hdr.py [-h] [-s] <input_file> <output_directory>\n"
-
     args = parser.parse_args()
-
     utils.check_and_make_dir(args.output_directory)
-
     main(args.input_file, args.output_directory, args.s)

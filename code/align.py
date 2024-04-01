@@ -146,7 +146,7 @@ def align(imgs:list[np.ndarray[np.uint8, 3]], alignType:AlignType, std_img_idx:i
 
     return imgs
 
-def main(input_file:str, output_dir:str, save_bitmaps:bool, save_aligned:bool):
+def main(input_file:str, output_dir:str=None, save_bitmaps:bool=False, save_aligned:bool=False):
     imgs, _, _, alignType, std_img_idx, depth, threshold_type, gray_range = utils.read_ldr_images(input_file)
     align(imgs, alignType, std_img_idx, depth, threshold_type, gray_range, output_dir if save_aligned else None)
     if save_bitmaps:
@@ -155,16 +155,13 @@ def main(input_file:str, output_dir:str, save_bitmaps:bool, save_aligned:bool):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Read LDR image & arguments from information in <input_file> & output bitmaps or aligned images to <output_directory>\n")
-    parser.add_argument("input_file", type=str, help="Input file (.txt) path")
-    parser.add_argument("output_directory", type=str, help="Output directory path")
+    parser.add_argument("input_file", type=str, metavar="<input_file>", help="Input file (.txt) path")
     parser.add_argument("-a", action="store_true", help="Output aligned images")
     parser.add_argument("-b", action="store_true", help="Output bitmaps")
-
-    # usage = parser.format_usage()
-    parser.usage = "align.py [-h] [-a] [-b] <input_file> <output_directory>\n"
-
+    parser.add_argument("-o", type=str, metavar="<output_directory>", help="Output directory path, required if [-a] or [-b]")
     args = parser.parse_args()
-
-    utils.check_and_make_dir(args.output_directory)
-
-    main(args.input_file, args.output_directory, args.b, args.a)
+    if args.a or args.b:
+        if not args.o:
+            parser.error("When selecting [-a] or [-b] or both, [-o <output_directory>] is required.")
+        utils.check_and_make_dir(args.o)
+    main(args.input_file, args.o, args.b, args.a)
