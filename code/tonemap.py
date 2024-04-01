@@ -211,8 +211,7 @@ if __name__ == '__main__':
     parser.add_argument("output_directory", type=str, help="Output directory path")
 
     # usage = parser.format_usage()
-    usage = "tonemap.py [-h] <input_file> <output_directory>\nExample: python tonemap.py img/test3/tonemap.txt img/test3\n"
-    parser.usage = usage
+    parser.usage = "tonemap.py [-h] <input_file> <output_directory>\n"
 
     args = parser.parse_args()
 

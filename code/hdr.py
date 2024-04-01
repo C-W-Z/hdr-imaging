@@ -200,8 +200,7 @@ if __name__ == '__main__':
     parser.add_argument("-s", action="store_true", help="Output response curve 'response-curve.png' & radiance map 'radiance-map.png' in <output_directory>")
 
     # usage = parser.format_usage()
-    usage = "hdr.py [-h] [-s] <input_file> <output_directory>\nExample: python hdr.py img/test1/image_list.txt img/test1\n"
-    parser.usage = usage
+    parser.usage = "hdr.py [-h] [-s] <input_file> <output_directory>\n"
 
     args = parser.parse_args()
 

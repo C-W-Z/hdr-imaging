@@ -159,8 +159,7 @@ if __name__ == '__main__':
     parser.add_argument("-b", action="store_true", help="Output bitmaps")
 
     # usage = parser.format_usage()
-    usage = "align.py [-h] [-a] [-b] <input_file> <output_directory>\nExample: python align.py img/test2/image_list.txt img/test2\n"
-    parser.usage = usage
+    parser.usage = "align.py [-h] [-a] [-b] <input_file> <output_directory>\n"
 
     args = parser.parse_args()
 
