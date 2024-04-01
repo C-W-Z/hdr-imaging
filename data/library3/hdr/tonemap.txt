@@ -1,0 +1,24 @@
+FILE=hdr.hdr  # HDR filename
+
+
+# Tonemapping algorithms and arguments
+
+
+# Algorithm  gamma  saturation  bias  brightness
+cv2_drago    2.2    1.2         0     1
+
+
+# Algorithm      gamma  brightness  normalize
+gamma_intensity  1.4    2.5         ALL
+
+
+# Algorithm  gamma  brightness  normalize
+gamma_color  1.8    1.3         ALL
+
+
+# Algorithm  a    Lwhite  delta  normalize  save-gray-image
+global       2.5  50      2.2    ALL        False
+
+
+# Algorithm  sigma_color  contrast  a   Lwhite  delta  normalize  save-filtered-images
+bilateral    1            3.5       13  40      5      ALL        False
