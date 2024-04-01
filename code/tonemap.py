@@ -153,18 +153,21 @@ def bilateral_filtering(hdr:np.ndarray[np.float32, 3], output_dir:str, sigma_ran
         filename = f"bilateral_low_{sigma_range}_{contrast}_{a}_{Lwhite}_{delta}_{normalize}.png"
         filename = os.path.join(output_dir, filename)
         print(f"saving low frequency image to {filename}")
-        cv2.imwrite(filename, single_global(low, a, Lwhite, delta) * 255)
+        # cv2.imwrite(filename, single_global(low, a, Lwhite, delta) * 255)
+        cv2.imwrite(filename, low * 255)
 
         high = np.exp(high)
         filename = f"bilateral_high_{sigma_range}_{contrast}_{a}_{Lwhite}_{delta}_{normalize}.png"
         filename = os.path.join(output_dir, filename)
         print(f"saving high frequency image to {filename}")
-        cv2.imwrite(filename, single_global(high, a, Lwhite, delta) * 255)
+        # cv2.imwrite(filename, single_global(high, a, Lwhite, delta) * 255)
+        cv2.imwrite(filename, high * 255)
 
         filename = f"bilateral_gray_{sigma_range}_{contrast}_{a}_{Lwhite}_{delta}_{normalize}.png"
         filename = os.path.join(output_dir, filename)
         print(f"saving LDR gray image to {filename}")
-        cv2.imwrite(filename, single_global(Ld, a, Lwhite, delta) * 255)
+        # cv2.imwrite(filename, single_global(Ld, a, Lwhite, delta) * 255)
+        cv2.imwrite(filename, Ld * 255)
 
     ldr = np.zeros_like(hdr, dtype=np.uint8)
     for i in range(3):
