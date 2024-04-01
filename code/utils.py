@@ -242,3 +242,14 @@ def read_tonemap_settings(setting_file:str) -> tuple[np.ndarray[np.float32, 3],l
 
     except FileNotFoundError as e:
         perror(f"FileNotFoundError: {e}")
+
+def check_and_make_dir(dir:str):
+    if os.path.isdir(dir):
+        return
+    print(f"{dir} is not a directory")
+    try:
+        print(f"Making directory {dir} ...")
+        os.makedirs(dir, exist_ok=True)
+        print(f"Success")
+    except Exception as e:
+        perror(f"Error: {e}")

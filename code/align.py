@@ -164,9 +164,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if not os.path.isdir(args.output_directory):
-        print(f"error: {args.output_directory} is not a directory\n")
-        parser.print_help()
-        exit()
+    utils.check_and_make_dir(args.output_directory)
 
     main(args.input_file, args.output_directory, args.b, args.a)
