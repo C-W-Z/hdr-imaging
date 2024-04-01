@@ -35,7 +35,7 @@ For example:
 
 ```shell
 $ cd code
-$ py hdr.py ../data/origin/test1/image_list.txt ../data/hdr/test1
+$ py hdr.py ../data/original/test1/image_list.txt ../data/hdr/test1
 ```
 
 ### Input File of hdr.py
@@ -124,7 +124,7 @@ For example:
 
 ```shell
 $ cd code
-$ py align.py ../data/origin/test1/image_list.txt ../data/align/test1 -a -b
+$ py align.py ../data/original/test1/image_list.txt ../data/align/test1 -a -b
 ```
 
 Note that if neither `-a` nor `-b` is selected, no image will be saved
