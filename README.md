@@ -21,14 +21,14 @@ Read LDR images & arguments from information in <input_file> & output the HDR im
 <output_directory>
 
 positional arguments:
-  input_file        Input file (.txt) path
-  output_directory  Output directory path
+  <input_file>        Input file (.txt) path
+  <output_directory>  Output directory path
 
 options:
-  -h, --help        show this help message and exit
-  -s                Output response curve 'response-curve.png'
-                    & radiance map 'radiance-map.png' in
-                    <output_directory>
+  -h, --help          show this help message and exit
+  -s                  Output response curve 'response-curve.png' 
+                      & radiance map 'radiance-map.png' in
+                      <output_directory>
 ```
 
 For example:
@@ -79,7 +79,7 @@ if `ALIGN=OUR`, you need to determine the parameters below for our MTB implement
 
 `LAMBDA` is the smoothness used in Debevec method, default is 20
 
-Last we need to write the image file names and the exposure time as follow:
+Last, we need to write the image file names and the exposure time as follow:
 
 ```txt
 # LDR filenames  exposure
@@ -105,26 +105,28 @@ origin/
 ### Usage
 
 ```shell
-usage: align.py [-h] [-a] [-b] <input_file> <output_directory>
+$ py align.py -h
+usage: align.py [-h] [-a] [-b] [-o <output_directory>] <input_file>
 
 Read LDR image & arguments from information in <input_file> & output bitmaps or aligned images to
 <output_directory>
 
 positional arguments:
-  input_file        Input file (.txt) path
-  output_directory  Output directory path
+  <input_file>          Input file (.txt) path
 
 options:
-  -h, --help        show this help message and exit
-  -a                Output aligned images
-  -b                Output bitmaps
+  -h, --help            show this help message and exit
+  -a                    Output aligned images
+  -b                    Output bitmaps
+  -o <output_directory>
+                        Output directory path, required if [-a] or [-b]
 ```
 
 For example:
 
 ```shell
 $ cd code
-$ py align.py ../data/test1/origin/image_list.txt ../data/test1/align -a -b
+$ py align.py ../data/test1/origin/image_list.txt -a -b -o ../data/test1/align
 ```
 
 Note that if neither `-a` nor `-b` is selected, no image will be saved
@@ -138,16 +140,17 @@ Same as input file for hdr.py, but `LAMBDA` parameter is not used
 ### Usage
 
 ```shell
+$ py tonemap.py -h
 usage: tonemap.py [-h] <input_file> <output_directory>
 
 Read HDR image & arguments from information in <input_file> & output the LDR images to <output_directory>
 
 positional arguments:
-  input_file        Input file (.txt) path
-  output_directory  Output directory path
+  <input_file>        Input file (.txt) path
+  <output_directory>  Output directory path
 
 options:
-  -h, --help        show this help message and exit
+  -h, --help          show this help message and exit
 ```
 
 For example:

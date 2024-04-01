@@ -76,18 +76,18 @@ def recursive_find_best_shifts(img:np.ndarray[np.uint8, 3], std_img:np.ndarray[n
     else:
         best_shift = (0, 0)
 
-    bin_img = threshold_bitmap(img, threshold_type, gray_range, None)
-    bin_std = threshold_bitmap(std_img, threshold_type, gray_range, None)
+    bin_img = threshold_bitmap(img, threshold_type, gray_range)
+    bin_std = threshold_bitmap(std_img, threshold_type, gray_range)
 
     min_diff = 1e18
     best_delta = (0, 0)
     for tx, ty in NEIGHBORS:
-        delta = (tx + best_shift[0] * 2, ty + best_shift[1] * 2)
-        shifted = translation(bin_img, delta[0], delta[1])
+        dx, dy = (tx + best_shift[0] * 2, ty + best_shift[1] * 2)
+        shifted = translation(bin_img, dx, dy)
         diff = img_diff_pixels(shifted, bin_std)
         if diff < min_diff:
             min_diff = diff
-            best_delta = delta
+            best_delta = (dx, dy)
     best_shift = best_delta
     return best_shift
 
