@@ -14,7 +14,7 @@ CSIE B10902058 胡桓碩
 ### Usage
 
 ```shell
-$ py hdr.py -h
+$ python hdr.py -h
 usage: hdr.py [-h] [-s] <input_file> <output_directory>
 
 Read LDR images & arguments from information in <input_file> & output the HDR image 'hdr.hdr' to
@@ -35,7 +35,7 @@ For example:
 
 ```shell
 $ cd code
-$ py hdr.py ../data/test1/origin/image_list.txt ../data/test1/hdr
+$ python hdr.py ../data/test1/origin/image_list.txt ../data/test1/hdr
 ```
 
 ### Input File of hdr.py
@@ -68,14 +68,10 @@ There are some parameters:
 
 if `ALIGN=OUR`, you need to determine the parameters below for our MTB implementation:
 
-> `STD` is the standard image index you chosen, if the index is not valid, we will choose the middle image as standard image
-> 
-> `DEPTH` must >= 0, this is the recursion depth for reducing image size by half and align, default is `3`
->
-> `THRESHOLD` has 3 options: `MEDIAN` `MEAN` `MEDIAN_MEAN_AVERAGE`
-> , this is the threshold type used in MTB, default is `MEDIAN`
-> 
-> `GRAYRANGE` must >= 0, we will ignore the intensity between `THRESHOLD-GRAYRANGE` and `THRESHOLD+GRAYRANGE` when calculate the difference between 2 bit maps
+1. `STD` is the standard image index you chosen, if the index is not valid, we will choose the middle image as standard image
+2. `DEPTH` must >= 0, this is the recursion depth for reducing image size by half and align, default is `3`
+3. `THRESHOLD` has 3 options: `MEDIAN` `MEAN` `MEDIAN_MEAN_AVERAGE`, this is the threshold type used in MTB, default is `MEDIAN`
+5. `GRAYRANGE` must >= 0, we will ignore the intensity between `THRESHOLD-GRAYRANGE` and `THRESHOLD+GRAYRANGE` when calculate the difference between 2 bit maps
 
 `LAMBDA` is the smoothness used in Debevec method, default is 20
 
@@ -105,7 +101,7 @@ origin/
 ### Usage
 
 ```shell
-$ py align.py -h
+$ python align.py -h
 usage: align.py [-h] [-a] [-b] [-o <output_directory>] <input_file>
 
 Read LDR image & arguments from information in <input_file> & output bitmaps or aligned images to
@@ -126,7 +122,7 @@ For example:
 
 ```shell
 $ cd code
-$ py align.py ../data/test1/origin/image_list.txt -a -b -o ../data/test1/align
+$ python align.py ../data/test1/origin/image_list.txt -a -b -o ../data/test1/align
 ```
 
 Note that if neither `-a` nor `-b` is selected, no image will be saved
@@ -140,7 +136,7 @@ Same as input file for hdr.py, but `LAMBDA` parameter is not used
 ### Usage
 
 ```shell
-$ py tonemap.py -h
+$ python tonemap.py -h
 usage: tonemap.py [-h] <input_file> <output_directory>
 
 Read HDR image & arguments from information in <input_file> & output the LDR images to <output_directory>
@@ -157,7 +153,7 @@ For example:
 
 ```shell
 $ cd code
-$ py tonemap.py ../data/test1/hdr/tonemap.txt ../data/test1/ldr
+$ python tonemap.py ../data/test1/hdr/tonemap.txt ../data/test1/ldr
 ```
 
 ### Input file for tonemap.py
