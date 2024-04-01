@@ -20,34 +20,31 @@ class ThresholdType(IntEnum):
     def __str__(self):
         return self.name.upper()
 
-def threshold_bitmaps(images:list[np.ndarray[np.uint8, 3]], threshold_type:ThresholdType=ThresholdType.MEDIAN, gray_range:int=4, save_dir:str=None) -> list[np.ndarray[np.uint8, 2]]:
-    bitmaps = []
-    for i, img in enumerate(images):
-        gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+def threshold_bitmap(img:np.ndarray[np.uint8, 3], threshold_type:ThresholdType=ThresholdType.MEDIAN, gray_range:int=4, save_dir:str=None, i:int=0) -> np.ndarray[np.uint8, 2]:
 
-        if threshold_type == ThresholdType.MEDIAN:
-            thres = np.median(img)
-        elif threshold_type == ThresholdType.MEAN:
-            thres = np.mean(img)
-        else:
-            thres = (np.median(img) + np.mean(img)) / 2
+    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-        _, high = cv2.threshold(gray_img, thres + gray_range, 255, cv2.THRESH_BINARY)
-        _, low = cv2.threshold(gray_img, thres - gray_range, 255, cv2.THRESH_BINARY)
+    if threshold_type == ThresholdType.MEDIAN:
+        thres = np.median(img)
+    elif threshold_type == ThresholdType.MEAN:
+        thres = np.mean(img)
+    else:
+        thres = (np.median(img) + np.mean(img)) / 2
 
-        different_pixels = np.where(high != low)
-        binary_img = high
-        binary_img[different_pixels] = 128
+    _, high = cv2.threshold(gray_img, thres + gray_range, 255, cv2.THRESH_BINARY)
+    _, low = cv2.threshold(gray_img, thres - gray_range, 255, cv2.THRESH_BINARY)
 
-        if save_dir != None:
-            filename = f"bitmap_{threshold_type}_{gray_range}_{i+1}.jpg"
-            filename = os.path.join(save_dir, filename)
-            print(f"saving bitmap to {filename}")
-            cv2.imwrite(filename, binary_img)
+    different_pixels = np.where(high != low)
+    bitmap = high
+    bitmap[different_pixels] = 128
 
-        bitmaps.append(binary_img)
+    if save_dir != None:
+        filename = f"bitmap_{threshold_type}_{gray_range}_{i+1}.jpg"
+        filename = os.path.join(save_dir, filename)
+        print(f"saving bitmap to {filename}")
+        cv2.imwrite(filename, bitmap)
 
-    return bitmaps
+    return bitmap
 
 def img_diff_pixels(img1:np.ndarray[np.uint8, 2], img2:np.ndarray[np.uint8, 2]) -> int:
     assert(img1.shape == img2.shape)
@@ -55,7 +52,7 @@ def img_diff_pixels(img1:np.ndarray[np.uint8, 2], img2:np.ndarray[np.uint8, 2]) 
     margin = math.ceil(min(H, W) * 0.1)
     center_img1 = img1[margin:-margin, margin:-margin]
     center_img2 = img2[margin:-margin, margin:-margin]
-    return np.count_nonzero((center_img1 != center_img2) & (center_img1 != 128) & (center_img2 != 128))
+    return H * W - np.count_nonzero((center_img1 == center_img2) & (center_img1 != 128))
 
 def translation(img:np.ndarray[np.uint8, 2], tx:int, ty:int) -> np.ndarray[np.uint8, 2]:
     H, W = img.shape[:2]
@@ -68,23 +65,26 @@ NEIGHBORS = np.array([[-1, -1], [ 0, -1], [ 1, -1],
                       [-1,  0], [ 0,  0], [ 1,  0],
                       [-1,  1], [ 0,  1], [ 1,  1]])
 
-def recursive_find_best_shifts(img:np.ndarray[np.uint8, 2], std_img:np.ndarray[np.uint8, 2], depth:int) -> tuple[int, int]:
+def recursive_find_best_shifts(img:np.ndarray[np.uint8, 3], std_img:np.ndarray[np.uint8, 3], depth:int, threshold_type:ThresholdType, gray_range:int) -> tuple[int, int]:
     assert(img.shape == std_img.shape)
-    H, W = std_img.shape[:2]
+    H, W, *_ = std_img.shape
 
     if depth > 0:
-        resized_img = cv2.resize(img, (W // 2, H // 2), interpolation=cv2.INTER_NEAREST)
-        resized_std = cv2.resize(std_img, (W // 2, H // 2), interpolation=cv2.INTER_NEAREST)
-        best_shift = recursive_find_best_shifts(resized_img, resized_std, depth - 1)
+        resized_img = cv2.resize(img, (W // 2, H // 2))
+        resized_std = cv2.resize(std_img, (W // 2, H // 2))
+        best_shift = recursive_find_best_shifts(resized_img, resized_std, depth - 1, threshold_type, gray_range)
     else:
         best_shift = (0, 0)
+
+    bin_img = threshold_bitmap(img, threshold_type, gray_range, None)
+    bin_std = threshold_bitmap(std_img, threshold_type, gray_range, None)
 
     min_diff = 1e18
     best_delta = (0, 0)
     for tx, ty in NEIGHBORS:
         delta = (tx + best_shift[0] * 2, ty + best_shift[1] * 2)
-        shifted = translation(img, delta[0], delta[1])
-        diff = img_diff_pixels(shifted, std_img)
+        shifted = translation(bin_img, delta[0], delta[1])
+        diff = img_diff_pixels(shifted, bin_std)
         if diff < min_diff:
             min_diff = diff
             best_delta = delta
@@ -94,19 +94,18 @@ def recursive_find_best_shifts(img:np.ndarray[np.uint8, 2], std_img:np.ndarray[n
 def shift_add(s1:tuple[int, int], s2:tuple[int, int]) -> tuple[int, int]:
     return (s1[0] + s2[0], s1[1] + s2[1])
 
-def mtb(imgs:list[np.ndarray[np.uint8, 3]], std_img_idx:int, depth:int, threshold_type:ThresholdType, gray_range:int, save_dir:str=None, save_bitmaps:bool=False, save_aligned:bool=False) -> list[np.ndarray[np.uint8, 3]]:
+def mtb(imgs:list[np.ndarray[np.uint8, 3]], std_img_idx:int, depth:int, threshold_type:ThresholdType, gray_range:int, save_dir:str=None) -> list[np.ndarray[np.uint8, 3]]:
 
     P = len(imgs)
     assert(std_img_idx >= 0 and std_img_idx < P)
     assert(imgs[std_img_idx].shape == img.shape for img in imgs)
-    bin = threshold_bitmaps(imgs, threshold_type, gray_range, save_dir if save_bitmaps else None)
 
     best_shifts = [(0, 0)] * P
     for i in range(std_img_idx - 1, -1, -1):
-        best_shifts[i] = recursive_find_best_shifts(bin[i], bin[i + 1], depth)
+        best_shifts[i] = recursive_find_best_shifts(imgs[i], imgs[i + 1], depth, threshold_type, gray_range)
         best_shifts[i] = shift_add(best_shifts[i], best_shifts[i + 1])
     for i in range(std_img_idx + 1, P):
-        best_shifts[i] = recursive_find_best_shifts(bin[i], bin[i - 1], depth)
+        best_shifts[i] = recursive_find_best_shifts(imgs[i], imgs[i - 1], depth, threshold_type, gray_range)
         best_shifts[i] = shift_add(best_shifts[i], best_shifts[i - 1])
 
     print(f"shifts of images = {best_shifts}")
@@ -114,22 +113,22 @@ def mtb(imgs:list[np.ndarray[np.uint8, 3]], std_img_idx:int, depth:int, threshol
     results = []
     for i, img in enumerate(imgs):
         results.append(translation(img, best_shifts[i][0], best_shifts[i][1]))
-        if save_dir != None and save_aligned:
-            filename = f"aligned_{AlignType.OUR}_{std_img_idx}_{depth}_{threshold_type}_{gray_range}_{i+1}.jpg"
+        if save_dir != None:
+            filename = f"aligned_{AlignType.OUR}_{std_img_idx}_{depth}_{threshold_type}_{gray_range}-{i+1}.jpg"
             filename = os.path.join(save_dir, filename)
             print(f"saving aligned image to {filename}")
             cv2.imwrite(filename, results[i])
 
     return results
 
-def align(imgs:list[np.ndarray[np.uint8, 3]], alignType:AlignType, std_img_idx:int, depth:int, threshold_type:ThresholdType, gray_range:int, save_dir:str=None, save_bitmaps:bool=False, save_aligned:bool=False):
+def align(imgs:list[np.ndarray[np.uint8, 3]], alignType:AlignType, std_img_idx:int, depth:int, threshold_type:ThresholdType, gray_range:int, save_dir:str=None):
 
     # Align input images based on MTB method
     if alignType == AlignType.CV2:
         print("using cv2 MTB alignment ...")
         alignMTB = cv2.createAlignMTB()
         alignMTB.process(imgs, imgs)
-        if save_aligned:
+        if save_dir != None:
             for i, img in imgs:
                 filename = f"aligned_{AlignType.CV2}_{i+1}.jpg"
                 filename = os.path.join(save_dir, filename)
@@ -140,7 +139,7 @@ def align(imgs:list[np.ndarray[np.uint8, 3]], alignType:AlignType, std_img_idx:i
         print("using our MTB alignment ...")
         if std_img_idx < 0 or std_img_idx >= len(imgs):
             std_img_idx = len(imgs) // 2
-        imgs = mtb(imgs, std_img_idx, depth, threshold_type, gray_range, save_dir, save_bitmaps, save_aligned)
+        imgs = mtb(imgs, std_img_idx, depth, threshold_type, gray_range, save_dir)
 
     else:
         print(f"AlignType is {AlignType.NONE}")
@@ -149,7 +148,10 @@ def align(imgs:list[np.ndarray[np.uint8, 3]], alignType:AlignType, std_img_idx:i
 
 def main(input_file:str, output_dir:str, save_bitmaps:bool, save_aligned:bool):
     imgs, _, _, alignType, std_img_idx, depth, threshold_type, gray_range = utils.read_ldr_images(input_file)
-    align(imgs, alignType, std_img_idx, depth, threshold_type, gray_range, output_dir, save_bitmaps, save_aligned)
+    align(imgs, alignType, std_img_idx, depth, threshold_type, gray_range, output_dir if save_aligned else None)
+    if save_bitmaps:
+        for i, img in enumerate(imgs):
+            threshold_bitmap(img, threshold_type, gray_range, output_dir, i)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Read LDR image & arguments from information in <input_file> & output bitmaps or aligned images to <output_directory>\n")
