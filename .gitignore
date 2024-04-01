@@ -1,4 +1,6 @@
 *__pycache__*
 *.zip
 other
-data/ldr
+data/*/ldr
+data/*/hdr/response-curve.png
+data/*/hdr/radiance-map.png

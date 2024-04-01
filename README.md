@@ -1,7 +1,7 @@
 # HDR Imaging
 
 CSIE B11902078 張宸瑋
-CSIE <你的學號> 胡桓碩
+CSIE B10902058 胡桓碩
 
 ## Dependencies
 
@@ -35,12 +35,12 @@ For example:
 
 ```shell
 $ cd code
-$ py hdr.py ../data/original/test1/image_list.txt ../data/hdr/test1
+$ py hdr.py ../data/test1/origin/image_list.txt ../data/test1/hdr
 ```
 
 ### Input File of hdr.py
 
-For example, this is the file [data/original/test2/image_list.txt](data/original/test2/image_list.txt)
+For example, this is the file [data/test2/origin/image_list.txt](data/test2/origin/image_list.txt)
 
 ```txt
 ALIGN=OUR      # Align images using our implementation
@@ -93,7 +93,7 @@ The file names should not contain any spaces, and this .txt file must be in the 
 The structure of folder will be like:
 
 ```txt
-original/
+origin/
   image_list.txt
   your-image-1.jpg
   your-image-2.jpg
@@ -124,7 +124,7 @@ For example:
 
 ```shell
 $ cd code
-$ py align.py ../data/original/test1/image_list.txt ../data/align/test1 -a -b
+$ py align.py ../data/test1/origin/image_list.txt ../data/test1/align -a -b
 ```
 
 Note that if neither `-a` nor `-b` is selected, no image will be saved
@@ -154,12 +154,12 @@ For example:
 
 ```shell
 $ cd code
-$ py tonemap.py ../data/hdr/test1/tonemap.txt ../data/ldr/test1
+$ py tonemap.py ../data/test1/hdr/tonemap.txt ../data/test1/ldr
 ```
 
 ### Input file for tonemap.py
 
-For example, this is the file [data/hdr/test1/tonemap.txt](data/hdr/test1/tonemap.txt)
+For example, this is the file [data/test1/hdr/tonemap.txt](data/test1/hdr/tonemap.txt)
 
 ```txt
 FILE=hdr.hdr  # HDR filename
