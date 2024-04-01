@@ -1,0 +1,22 @@
+ALIGN=OUR
+STD=6             # Standard image index for MTB alignment
+DEPTH=3           # Recusion depth in MTB algorithm (minimum is 0)
+THRESHOLD=MEDIAN  # Threshold type in MTB algorithm
+GRAYRANGE=2       # the range of intensities to ignore around threshold
+
+LAMBDA=20  # The lambda (smoothness) used in solving response curve
+
+# LDR filenames       exposure
+20240401_175701.JPG   4
+20240401_175706.JPG   3.4822
+20240401_175709.JPG   2.8284271
+20240401_175712.JPG   2.4622888
+20240401_175715.JPG   1.7411011
+20240401_175717.JPG   1.4142136
+20240401_175720.JPG   1.0717735
+20240401_175722.JPG   0.8122524
+20240401_175725.JPG   0.7071068
+20240401_175728.JPG   0.5743492
+20240401_175732.JPG   0.4061262
+20240401_175735.JPG   0.3535534
+20240401_175738.JPG   0.2871746

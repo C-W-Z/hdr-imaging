@@ -5,15 +5,15 @@ FILE=hdr.hdr  # HDR filename
 
 
 # Algorithm  gamma  saturation  bias  brightness
-# cv2_drago    2.2    1         0     1
+cv2_drago    2.2    1         0     1
 
 
 # Algorithm      gamma  brightness  normalize
-# gamma_intensity  1.5    3           ALL
+gamma_intensity  1.5    3           ALL
 
 
 # Algorithm  gamma  brightness  normalize
-# gamma_color  2      1.5         ALL
+gamma_color  2      1.5         ALL
 
 
 # Algorithm  a    Lwhite  delta  normalize  save-gray-image
