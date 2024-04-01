@@ -9,7 +9,7 @@ import utils, align
 def weight_function():
     return np.array([z+1 if z < 128 else 256-z for z in range(256)], dtype=np.float32)
 
-def pick_sample_pixels(H:int, W:int, N:int=400, padding:int=20) -> list[tuple[int, int]]:
+def pick_sample_pixels(H:int, W:int, N:int=400, margin:int=20) -> list[tuple[int, int]]:
     """
     Pick at least 256 pixels in H * W pixels
 
@@ -17,14 +17,14 @@ def pick_sample_pixels(H:int, W:int, N:int=400, padding:int=20) -> list[tuple[in
     H : height of image
     W : width of image
     N : number of pixels to pick, N >= 256 > (Zmax - Zmin) / (P - 1)
-    padding : Areas near the edges of the image where pixels will not be picked
+    margin : Areas near the edges of the image where pixels will not be picked
 
     Returns:
     pixels[i] : the ith of N sample pixel positions
     """
 
-    H -= 2 * padding
-    W -= 2 * padding
+    H -= 2 * margin
+    W -= 2 * margin
     assert(N >= 256 and H * W >= 256)
     if N > H * W:
         N = H * W
@@ -34,7 +34,7 @@ def pick_sample_pixels(H:int, W:int, N:int=400, padding:int=20) -> list[tuple[in
         row = (i * step) // W
         col = (i * step) % W
         assert(row >= 0 and row < H and col >= 0 and col < W)
-        pixels.append((padding + row, padding + col))
+        pixels.append((margin + row, margin + col))
     return pixels
 
 def images_to_z(images:np.ndarray[np.uint8, 3], sample_pixel_locations:list[tuple[int, int]]) -> np.ndarray[np.uint8, 2]:
@@ -111,13 +111,13 @@ def construct_radiance_map(images:np.ndarray[np.uint8, 3], g:np.ndarray[np.float
     Construct the radiance map (size is same as images)
 
     Parameters:
-    images[i,j,k] : The pixel value of pixel location i,j in image k (len=P, min=0, max=255)
+    images[k,i,j] : The pixel value of pixel location i,j in image k (len=P, min=0, max=255)
     g[z]          : log exposure corresponding to pixel value z (len=256)
     lnt[j]        : The log delta t or log shutter speed for image j (len=P)
     w[z]          : weighting function value for pixel value z (len=256)
 
     Returns:
-    lnE[z] : log film irradiance at pixel location i (len=N)
+    lnE[i,j] : log film irradiance at pixel location (i,j)
     """
 
     assert(len(images) == len(lnt) and len(g) == 256 and len(w) == 256)
@@ -142,9 +142,9 @@ def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np
     print("start Debevec HDR reconstruction ...")
 
     H, W = channels[0][0].shape
-    padding = math.ceil(min(H, W) * 0.1)
-    print(f"padding = {padding} pixels")
-    pixel_positions = pick_sample_pixels(H, W, padding=padding)
+    margin = math.ceil(min(H, W) * 0.1)
+    print(f"margin = {margin} pixels")
+    pixel_positions = pick_sample_pixels(H, W, margin=margin)
     w = weight_function()
 
     if save_dir != None:

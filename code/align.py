@@ -52,9 +52,9 @@ def threshold_bitmaps(images:list[np.ndarray[np.uint8, 3]], threshold_type:Thres
 def img_diff_pixels(img1:np.ndarray[np.uint8, 2], img2:np.ndarray[np.uint8, 2]) -> int:
     assert(img1.shape == img2.shape)
     H, W = img1.shape
-    padding = math.ceil(min(H, W) * 0.1)
-    center_img1 = img1[padding:-padding, padding:-padding]
-    center_img2 = img2[padding:-padding, padding:-padding]
+    margin = math.ceil(min(H, W) * 0.1)
+    center_img1 = img1[margin:-margin, margin:-margin]
+    center_img2 = img2[margin:-margin, margin:-margin]
     return np.count_nonzero((center_img1 != center_img2) & (center_img1 != 128) & (center_img2 != 128))
 
 def translation(img:np.ndarray[np.uint8, 2], tx:int, ty:int) -> np.ndarray[np.uint8, 2]:
