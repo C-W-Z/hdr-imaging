@@ -246,7 +246,7 @@ $$ L_m(x,y) = \frac{a}{\bar{L}_w} L_w(x,y) $$
 
 8. `Lwhite` in `global` and `bilateral` is the $L_{white}$ in the following equation in the photographic global mapping algorithm.
 
-$$ L_d(x,y) = \frac{ L_m(x,y) \left( 1 + \frac{ L_m(x,y) }{ L^2_{white}(x,y) } \right) }{ 1 + Lm(x,y) } $$
+$$ L_d(x,y) = \frac{ L_m(x,y) \left( 1 + \frac{ L_m(x,y) }{ L^2_{white}(x,y) } \right) }{ 1 + L_m(x,y) } $$
 
 9. `sigma_color` in `bilateral` is the $\sigma$ parameter in the Guassion kernel of intensity, in bilateral filter. And the $\sigma$ parameter in the Guassion kernel of distance is auto-determined.
 
