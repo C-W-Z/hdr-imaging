@@ -238,11 +238,11 @@ Parameter Explanation:
 
 6. `delta` in `global` and `bilateral` is the $\delta$ in the following equation in the photographic global mapping algorithm.
 
-$$ \bar{L}\_w = \exp \left( \frac{1}{N} \sum\_{x,y} \log \left( \delta + L_w(x,y) \right) \right) $$
+$$ \bar{L_w} = \exp \left( \frac{1}{N} \sum_{x,y} \log \left( \delta + L_w(x,y) \right) \right) $$
 
 7. `a` in `global` and `bilateral` is the $a$ in the following equation in the photographic global mapping algorithm.
 
-$$ L_m(x,y) = \frac{a}{\bar{L}_w} L_w(x,y) $$
+$$ L_m(x,y) = \frac{a}{\bar{L_w}} L_w(x,y) $$
 
 8. `Lwhite` in `global` and `bilateral` is the $L_{white}$ in the following equation in the photographic global mapping algorithm.
 
