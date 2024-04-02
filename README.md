@@ -1,6 +1,7 @@
 # HDR Imaging
 
 CSIE B11902078 張宸瑋
+
 CSIE B10902058 胡桓碩
 
 ## Dependencies
@@ -58,22 +59,22 @@ StLouisArchMultExpEV+1.51.jpeg  2.848100  # standard image
 StLouisArchMultExpEV+4.09.jpeg  17.02992
 ```
 
-Note that the `#` is just like a comment in python, we will ignore everything after `#`
+Note that the `#` is just like a comment in python, we will ignore everything after `#`.
 
-The input file should be a .txt file, for example `image_list.txt`
+The input file should be a .txt file, for example `image_list.txt`.
 
 There are some parameters:
 
-`ALIGN=NONE` `ALIGN=OUR` `ALIGN=CV2`, this is alignment method, OUR is our implementation of MTB, CV2 is the OpenCV implementation of MTB
+`ALIGN=NONE` `ALIGN=OUR` `ALIGN=CV2`, this is alignment method, OUR is our implementation of MTB, CV2 is the OpenCV implementation of MTB.
 
 if `ALIGN=OUR`, you need to determine the parameters below for our MTB implementation:
 
-1. `STD` is the standard image index you chosen, if the index is not valid, we will choose the middle image as standard image
-2. `DEPTH` must >= 0, this is the recursion depth for reducing image size by half and align, default is `3`
-3. `THRESHOLD` has 3 options: `MEDIAN` `MEAN` `MEDIAN_MEAN_AVERAGE`, this is the threshold type used in MTB, default is `MEDIAN`
-5. `GRAYRANGE` must >= 0, we will ignore the intensity between `THRESHOLD-GRAYRANGE` and `THRESHOLD+GRAYRANGE` when calculate the difference between 2 bit maps
+1. `STD` is the standard image index you chosen, if the index is not valid, we will choose the middle image as standard image.
+2. `DEPTH` must >= 0, this is the recursion depth for reducing image size by half and align, default is `3`.
+3. `THRESHOLD` has 3 options: `MEDIAN` `MEAN` `MEDIAN_MEAN_AVERAGE`, this is the threshold type used in MTB, default is `MEDIAN`.
+5. `GRAYRANGE` must >= 0, we will ignore the intensity between `THRESHOLD-GRAYRANGE` and `THRESHOLD+GRAYRANGE` when calculate the difference between 2 bit maps.
 
-`LAMBDA` is the smoothness used in Debevec method, default is 20
+`LAMBDA` is the smoothness used in Debevec method, default is 20.
 
 Last, we need to write the image file names and the exposure time as follow:
 
@@ -125,11 +126,11 @@ $ cd code
 $ python align.py ../data/test1/origin/image_list.txt -a -b -o ../data/test1/align
 ```
 
-Note that if neither `-a` nor `-b` is selected, no image will be saved
+Note that if neither `-a` nor `-b` is selected, no image will be saved.
 
 ### Input file for align.py
 
-Same as input file for hdr.py, but `LAMBDA` parameter is not used
+Same as input file for hdr.py, but `LAMBDA` parameter is not used.
 
 ## tonemap.py
 
@@ -195,11 +196,11 @@ bilateral    0.8          6         20  50      1.2    ALL        False
 bilateral    2            5         10  50      1      ALL        True
 ```
 
-Note that the `#` is just like a comment in python, we will ignore everything after `#`
+Note that the `#` is just like a comment in python, we will ignore everything after `#`.
 
-The input file should be a .txt file, for example `tonemap.txt`
+The input file should be a .txt file, for example `tonemap.txt`.
 
-First you need to define a parameter `FILE`, which is the .hdr file name without spaces, and this hdr file should be in the same folder as the input file
+First you need to define a parameter `FILE`, which is the .hdr file name without spaces, and this hdr file should be in the same folder as the input file.
 
 The folder structure will be like:
 
@@ -209,22 +210,44 @@ hdr/
   hdr.hdr
 ```
 
-Second, you need to write the algorithm and arguments in a line for tonemapping
+Second, you need to write the algorithm and arguments in a line for tonemapping.
 
-Note that the tonemap.py will run all of the lines you write, which means if you write multiple line of algorithms and arguments, tonemap.py will run tonemapping multiple times, with those algorithms and arguments
+Note that the tonemap.py will run all of the lines you write, which means if you write multiple line of algorithms and arguments, tonemap.py will run tonemapping multiple times, with those algorithms and arguments.
 
 The algorithm names and arguments are:
 
-- `cv2_drago`  `gamma`  `saturation`  `bias`  `brightness`
-- `gamma_intensity` `gamma`  `brightness`  `normalize`
-- `gamma_color`  `gamma`  `brightness`  `normalize`
-- `global`  `a`  `Lwhite`  `delta`  `normalize`  `save-gray-image`
-- `bilateral` `sigma_color`  `contrast`  `a`  `Lwhite`  `delta`  `normalize`  `save-filtered-images`
+- `cv2_drago`:  `gamma`  `saturation`  `bias`  `brightness`
+- `gamma_intensity`:  `gamma`  `brightness`  `normalize`
+- `gamma_color`:  `gamma`  `brightness`  `normalize`
+- `global`:  `a`  `Lwhite`  `delta`  `normalize`  `save-gray-image`
+- `bilateral`:  `sigma_color`  `contrast`  `a`  `Lwhite`  `delta`  `normalize`  `save-filtered-images`
 
-Please note that the order of parameters must be the same as above
+Please note that the order of parameters must be the same as above.
 
-The most of the types of arguments are float, like `gamma` `saturation`  `bias`  `brightness`  `a`  `Lwhite`  `delta`  `sigma_color`  `contrast`
+Parameter Explanation:
 
-But `save-gray-image` and `save-filtered-images` are boolean: `True` or `False`
+1. The most of the types of arguments are float, like `gamma` `saturation`  `bias`  `brightness`  `a`  `Lwhite`  `delta`  `sigma_color`  `contrast`
 
-And the `normalize` has 3 options: `NONE` `ALL` `CHANNEL`, `NONE` means tonemapping without normalization, `ALL` means normalize the whole LDR image, `CHANNEL` means normalize each channel in the LDR image individually
+2. `save-gray-image` and `save-filtered-images` are boolean: `True` or `False`
+
+3. `normalize` has 3 options: `NONE` `ALL` `CHANNEL`, `NONE` means tonemapping without normalization, `ALL` means normalize the whole LDR image, `CHANNEL` means normalize each channel in the LDR image individually.
+
+4. `gamma`($\gamma$) in `gamma_intensity` and `gamma_color`: each value $x$ of hdr will be mapped to $x^{\frac{1}{\gamma}}$
+
+5. `brightness` in `cv2_drago`, `gamma_intensity`, `gamma_color`: each value of the result of tonemapping will be multiply by `brightness`.
+
+6. `delta` in `global` and `bilateral` is the $\delta$ in the following equation in the photographic global mapping algorithm.
+
+$$ \bar{L}\_w = \exp \left( \frac{1}{N} \sum\_{x,y} \log \left( \delta + L_w(x,y) \right) \right) $$
+
+7. `a` in `global` and `bilateral` is the $a$ in the following equation in the photographic global mapping algorithm.
+
+$$ L_m(x,y) = \frac{a}{\bar{L}_w} L_w(x,y) $$
+
+8. `Lwhite` in `global` and `bilateral` is the $L_{white}$ in the following equation in the photographic global mapping algorithm.
+
+$$ L_d(x,y) = \frac{ L_m(x,y) \left( 1 + \frac{ L_m(x,y) }{ L^2_{white}(x,y) } \right) }{ 1 + Lm(x,y) } $$
+
+9. `sigma_color` in `bilateral` is the $\sigma$ parameter in the Guassion kernel of intensity, in bilateral filter. And the $\sigma$ parameter in the Guassion kernel of distance is auto-determined.
+
+10. `contrast` in `bilateral` is the value that determines how much the low frequency part (base) filtered by bilateral filter is compressed.
