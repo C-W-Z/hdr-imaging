@@ -153,7 +153,7 @@ def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np
 
     hdr_image = np.zeros((H, W, 3), dtype=np.float32)
 
-    print(f"lamda = {l}")
+    print(f"lambda = {l}")
 
     # channel 0,1,2 = B,G,R
     for i, channel in enumerate(channels):
@@ -167,19 +167,17 @@ def hdr_reconstruction(channels:list[np.ndarray[np.uint8, 3]], lnt:np.ndarray[np
             plt.plot(g, range(256), color[i])
 
     if save_dir != None:
-        # Show response curve
         r_path = os.path.join(save_dir, 'response-curve.png')
         print(f"saving response curve to {r_path}")
 
-        plt.ylabel('pixel value Z')
-        plt.xlabel('log exposure X')
+        plt.ylabel('Pixel Value')
+        plt.xlabel('Log Exposure')
         plt.savefig(r_path)
 
-        # Display radiance map with pseudo-color image (log value)
         r_path = os.path.join(save_dir, 'radiance-map.png')
         print(f"saving radiance map to {r_path}")
 
-        plt.figure(figsize=(12,8))
+        plt.figure(figsize=(W / (H + W) * 16, H / (H + W) * 16))
         plt.imshow(np.log(cv2.cvtColor(hdr_image, cv2.COLOR_BGR2GRAY)), cmap='jet')
         plt.colorbar()
         plt.savefig(r_path)
