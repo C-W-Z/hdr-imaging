@@ -4,6 +4,8 @@ CSIE B11902078 張宸瑋
 
 CSIE B10902058 胡桓碩
 
+Assignment description: [https://www.csie.ntu.edu.tw/~cyy/courses/vfx/24spring/assignments/proj1/](https://www.csie.ntu.edu.tw/~cyy/courses/vfx/24spring/assignments/proj1/)
+
 ## Dependencies
 
 - opencv-python
@@ -251,3 +253,9 @@ $$ L_d(x,y) = \frac{ L_m(x,y) \left( 1 + \frac{ L_m(x,y) }{ L^2_{white}(x,y) } \
 9. `sigma_color` in `bilateral` is the $\sigma$ parameter in the Guassion kernel of intensity, in bilateral filter. And the $\sigma$ parameter in the Guassion kernel of distance is auto-determined.
 
 10. `contrast` in `bilateral` is the value that determines how much the low frequency part (base) filtered by bilateral filter is compressed.
+
+## Resources
+
+- Images in `data/test1/origin`: [https://www.pauldebevec.com/Research/HDR/](https://www.pauldebevec.com/Research/HDR/)
+- Images in `data/test2/origin` & `data/test3/origin`: [https://en.wikipedia.org/wiki/Multi-exposure_HDR_capture](https://en.wikipedia.org/wiki/Multi-exposure_HDR_capture)
+- Images in `data/test4/origin`: [https://filesamples.com/formats/hdr](https://filesamples.com/formats/hdr)
