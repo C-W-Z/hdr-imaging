@@ -18,6 +18,7 @@ gamma_intensity  1      13          ALL
 # Algorithm  gamma  brightness  normalize
 gamma_color  1      4           ALL
 gamma_color  1      4           CHANNEL
+gamma_color  1.5    2.3         ALL
 gamma_color  2.2    1.8         ALL
 gamma_color  2.2    1.8         CHANNEL
 
