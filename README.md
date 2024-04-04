@@ -258,4 +258,4 @@ $$ L_d(x,y) = \frac{ L_m(x,y) \left( 1 + \frac{ L_m(x,y) }{ L^2_{white}(x,y) } \
 
 - Images in `data/test1/origin`: [https://www.pauldebevec.com/Research/HDR/](https://www.pauldebevec.com/Research/HDR/)
 - Images in `data/test2/origin` & `data/test3/origin`: [https://en.wikipedia.org/wiki/Multi-exposure_HDR_capture](https://en.wikipedia.org/wiki/Multi-exposure_HDR_capture)
-- Images in `data/test4/origin`: [https://filesamples.com/formats/hdr](https://filesamples.com/formats/hdr)
+- Image in `data/test4/hdr`: [https://filesamples.com/formats/hdr](https://filesamples.com/formats/hdr)
