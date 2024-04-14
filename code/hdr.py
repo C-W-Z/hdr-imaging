@@ -102,7 +102,7 @@ def solve_response_function(Z:np.ndarray[np.uint8, 2], lnt:np.ndarray[np.float32
         A[k, i : i + 3] = l * w[i+1] * np.array([1, -2, 1])
         k += 1
     # Solve the system using SVD
-    x, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
+    x, *_ = np.linalg.lstsq(A, b, rcond=None)
     x = x.ravel()
     return (x[:256], x[256:])
 

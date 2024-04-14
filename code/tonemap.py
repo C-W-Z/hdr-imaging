@@ -61,10 +61,10 @@ def gamma_intensity(hdr:np.ndarray[np.float32, 3], output_dir:str, gamma:float, 
     for i in range(3):
         ldr[:,:,i] = hdr[:,:,i] * Ld / Lworld
         if normalize == NormalizeType.CHANNEL:
-            ldr[:,:,i] = cv2.normalize(ldr[:,:,i], None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
+            ldr[:,:,i] = cv2.normalize(ldr[:,:,i], None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
 
     if normalize == NormalizeType.ALL:
-        ldr = cv2.normalize(ldr, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
+        ldr = cv2.normalize(ldr, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
 
     ldr *= brightness * 255
 
@@ -86,10 +86,10 @@ def gamma_color(hdr:np.ndarray[np.float32, 3], output_dir:str, gamma:float, brig
     for i in range(3):
         ldr[:,:,i] = np.power(hdr[:,:,i] / Lworld, 1/gamma) * L
         if normalize == NormalizeType.CHANNEL:
-            ldr[:,:,i] = cv2.normalize(ldr[:,:,i], None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
+            ldr[:,:,i] = cv2.normalize(ldr[:,:,i], None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
 
     if normalize == NormalizeType.ALL:
-        ldr = cv2.normalize(ldr, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
+        ldr = cv2.normalize(ldr, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
 
     ldr *= brightness * 255
 
